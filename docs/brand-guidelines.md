@@ -33,3 +33,10 @@ Keep this file short; details live in code (`frontend/src/`).
 - Every form: labels, required markers, inline errors with `role="alert"`, loading state,
   duplicate-submit guard.
 - Animations: opacity/transform only, ≤450ms, `prefers-reduced-motion` respected.
+
+---
+## Related notes
+- Role: UI voice/visual spec for frontend (mobile-first, plain language).
+- Applies to: [[docs/ARCHITECTURE|ARCHITECTURE]] (frontend) · [[docs/API|API]] (public portal)
+- Governed by: [[RULES]] · [[DEVELOPMENT_PLAN]]
+- Verified by: [[docs/TESTING|TESTING]]

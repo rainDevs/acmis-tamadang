@@ -18,16 +18,19 @@ Manual UI checks (required per task, `RULES.md §14`):
 - Loading, empty, success, validation, and error states for touched flows.
 - Keyboard navigation + visible focus for critical forms/dialogs; do not rely on color alone for status.
 
-## Backend (no code yet)
+## Backend (health endpoint implemented 2026-10-15)
 
-- Runtime available: PHP 8.2.12 CLI verified (`php -v`) on 2026-10-15.
-- When PHP files appear: `php -l <file>` per changed file; relevant unit/integration/API tests as added.
-- Required per change when endpoints exist: expected status codes + response shapes; invalid input, unauthenticated, and unauthorized requests; safe-error check (no SQL/stack/paths/secrets in responses).
+- Runtime available: PHP 8.2.12 CLI verified (`php -v`).
+- Syntax: `php -l <file>` per changed file — pass on all 5 new PHP files (verified 2026-10-15).
+- CLI smoke test: `php backend/tests/health_check.php` from repo root — 9/9 PASS, exit 0 (verified 2026-10-15).
+- Manifest: `composer validate` from `backend/` — valid (verified 2026-10-15).
+- Live check: `php -S localhost:8000 -t backend/public`, then `GET /api/health` → 200 + envelope, unknown route → JSON 404 (both verified live 2026-10-15).
+- Required per future change when endpoints exist: expected status codes + response shapes; invalid input, unauthenticated, and unauthorized requests; safe-error check (no SQL/stack/paths/secrets in responses).
 
-## Database (no migrations yet)
+## Database (workflow established, no live MySQL here)
 
-- Disposable/test-database procedure: Planned (pending TASK-005). When migrations land: apply to an empty disposable database; verify FKs, unique constraints, indexes; test transactions/rollback; test duplicate + invalid input; test capacity + concurrent-booking protection where relevant; confirm clean-DB-from-migrations works using the documented procedure.
-- Outstanding: no MySQL verification performed in this pass (no schema to apply).
+- Disposable/test-database procedure: documented in `database/README.md` (pending TASK-005 live verify). When migrations land: apply to an empty disposable database; verify FKs, unique constraints, indexes; test transactions/rollback; test duplicate + invalid input; test capacity + concurrent-booking protection where relevant; confirm clean-DB-from-migrations works using the documented procedure.
+- Outstanding: no MySQL verification performed (no MySQL CLI in this environment as of 2026-10-15; template file is comment-only by design).
 
 ## End-to-end (no slice implemented)
 
@@ -36,3 +39,10 @@ Manual UI checks (required per task, `RULES.md §14`):
 ## Reporting results
 - Record command, working directory, exit code, and observed outcome.
 - Do not weaken or delete tests to get green. Unverified behavior stays disclosed in `PROGRESS.md` / task reports.
+
+---
+## Related notes
+- Role: verification — exact commands + evidence rule (never claim pass without run).
+- Governed by: [[RULES]] · [[DEVELOPMENT_PLAN]]
+- Covers: [[docs/ARCHITECTURE|ARCHITECTURE]] · [[docs/API|API]] · [[docs/DATABASE|DATABASE]] · [[docs/DEPLOYMENT|DEPLOYMENT]]
+- Work queue: [[TASKS]] · State: [[PROGRESS]]

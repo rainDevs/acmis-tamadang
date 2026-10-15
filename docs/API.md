@@ -1,8 +1,17 @@
 # ACMIS API
 
-Status: **Zero endpoints implemented as of 2026-10-15.** No PHP code exists under `backend/`. This file records Planned contracts so the PHP backend can replace the frontend mock without changing UI expectations.
+Status: **One endpoint implemented as of 2026-10-15: `GET /api/health`.** Everything else is Planned; no database, auth, or business logic exists yet.
 
 Update policy (mandatory per `RULES.md §6`): update this file whenever a contract changes — endpoint behavior, parameters, response shapes, permissions, errors.
+
+## Implemented
+
+### `GET /api/health`
+- Purpose: liveness probe. No database, no auth.
+- Handler: `backend/src/Modules/Health/HealthController.php::check()` via `backend/public/index.php` + `backend/src/Routes/api.php`.
+- Verified 2026-10-15 live (`php -S localhost:8000 -t backend/public`): HTTP 200 + body below.
+- Response: `{ success: true, message: "ACMIS API is running.", data: { status: "ok", time: "<ISO-8601 UTC>" } }`
+- Unknown routes/methods: JSON 404 `{ success: false, message: "Not found.", data: null }` (verified live `/api/nope` → 404, no leaked paths).
 
 ## Envelope (Planned, mirrored by mock)
 
@@ -31,3 +40,11 @@ Full Planned families (names may be refined consistently, per `DEVELOPMENT_PLAN.
 - No SQL errors, stack traces, file paths, or secrets in responses (`RULES.md §6`).
 - List endpoints will use pagination + bounded result sets when implemented.
 - Never treat a mocked response as proof the real API works (`RULES.md §6`).
+
+---
+## Related notes
+- Role: spec — endpoint contracts (1 Implemented: `GET /api/health`, rest Planned).
+- Governed by: [[RULES]] · [[DEVELOPMENT_PLAN]] · [[docs/DECISIONS|DECISIONS]] (mock-only, stack lock)
+- Boundaries: [[docs/ARCHITECTURE|ARCHITECTURE]] · Schema: [[docs/DATABASE|DATABASE]]
+- Verified by: [[docs/TESTING|TESTING]] · Runs via: [[docs/DEPLOYMENT|DEPLOYMENT]]
+- Work queue: [[TASKS]] · UI voice: [[docs/brand-guidelines|brand-guidelines]]

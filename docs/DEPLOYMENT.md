@@ -8,11 +8,12 @@ Status: **No production deployment exists as of 2026-10-15.** No prod hosting se
 - Keep development, test, and production configuration separate.
 - Never commit passwords, keys, session secrets, or real patient data.
 
-## Local development (Implemented facts 2026-10-15)
+## Local development (verified 2026-10-15 unless noted)
 - Frontend: `cd frontend && npm run dev` (Vite); verified toolchain via `npm run build` / `npm run lint` (see `docs/TESTING.md`).
-- Backend runtime available: PHP 8.2.12 CLI; local stack may use XAMPP/Apache + MySQL per plan (XAMPP itself not verified here).
-- No root `.gitignore` exists (verified 2026-10-15 — Outstanding: add one covering secrets, local overrides, logs, real data dumps before backend config lands). `frontend/.gitignore` exists (node_modules, dist, logs, editor files).
-- No example environment file exists (`backend/.env.example`, `frontend/.env.example` both absent — Outstanding: add placeholder-only examples when config work starts; never commit real secrets).
+- Backend: `php -S localhost:8000 -t backend/public` from repo root, then `GET /api/health` (verified live 200 + JSON 404 for unknown routes).
+- Backend runtime: PHP 8.2.12 CLI; Composer 2.9.2 available (`composer validate` clean); local stack may use XAMPP/Apache + MySQL per plan (MySQL CLI not present here).
+- Root `.gitignore` exists (covers `backend/vendor/`, `backend/.env`, `frontend/dist/`, logs, data dumps; explicitly does NOT ignore `database/migrations/*.sql`).
+- `backend/.env.example` + `frontend/.env.example` exist (placeholders only). No real `.env` files tracked (verified: `backend/.env` and `frontend/.env` absent).
 
 ## Production (Planned — nothing performed)
 - Hosting: TBD (open question per `DEVELOPMENT_PLAN.md §16`: where hosted, who maintains, how backups protected).
@@ -26,3 +27,10 @@ Status: **No production deployment exists as of 2026-10-15.** No prod hosting se
 - Secrets live in environment/config outside version control with placeholder-only examples.
 - Never print secrets in terminal output, screenshots, reports, or agent summaries.
 - Before any destructive operation: verified backup + explicit approval.
+
+---
+## Related notes
+- Role: ops — local dev + Planned prod, backup/recovery (no prod yet).
+- Governed by: [[RULES]] · [[DEVELOPMENT_PLAN]] · [[docs/DECISIONS|DECISIONS]]
+- Uses: [[docs/TESTING|TESTING]] (build/health checks) · [[docs/DATABASE|DATABASE]] + [[database/README|database workflow]] (migrations) · [[docs/API|API]] (`GET /api/health`)
+- Work queue: [[TASKS]] · State: [[PROGRESS]]

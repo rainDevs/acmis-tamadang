@@ -33,33 +33,46 @@ Observed `frontend/src/` on 2026-10-15:
 
 Build: Vite 8 + React 19 + Tailwind v4 (`frontend/package.json`, `vite.config.js` with `@` → `./src`).
 
-## Backend — Planned (skeleton only, zero code files)
+## Backend — Implemented skeleton + health endpoint (6 files, 2026-10-15)
 
-Observed `backend/` on 2026-10-15 (all directories empty of files):
-- `public/` (Planned: front controller `index.php`)
-- `src/Config/`, `src/Database/`, `src/Middleware/`, `src/Modules/`, `src/Routes/`, `src/Shared/` (Planned: controllers/services/repositories/validation per `DEVELOPMENT_PLAN.md §3`)
-- `storage/logs/` (Planned: safe server-side logs, no secrets/medical notes)
-- `tests/` (Planned: PHP syntax + API tests)
+Observed `backend/` on 2026-10-15:
+- `composer.json` (package `acmis/backend`, php >=8.1, PSR-4 `App\` → `src/`, zero dependencies; `composer validate` clean)
+- `public/index.php` (front controller; serve: `php -S localhost:8000 -t backend/public`)
+- `src/Shared/Response.php` (`App\Shared\Response::json()` envelope helper)
+- `src/Routes/api.php` (route map; currently `GET /api/health` only)
+- `src/Modules/Health/HealthController.php` (liveness probe, no DB/auth)
+- `tests/health_check.php` (CLI smoke test, 9 checks, exit 0 verified)
+- Empty dirs (Planned use): `src/Config/`, `src/Database/`, `src/Middleware/`, `storage/logs/`
 
-No PHP files exist. No endpoint is implemented.
+Only `GET /api/health` (+ safe JSON 404) is implemented; see `docs/API.md`.
 
-## Database tier — Planned (skeleton only, zero migrations)
+## Database tier — workflow established, zero real migrations (2026-10-15)
 
 Root-level `database/` per `docs/DECISIONS.md` (not `backend/database/`):
-- `database/migrations/` — Implemented: empty directory; Planned: version-controlled SQL migrations
-- `database/seeders/` — Implemented: empty directory; Planned: synthetic seeds only
+- `database/README.md` — Implemented: naming (`YYYYMMDDHHMMSS_description.sql`), apply order, fresh-DB-from-empty + disposable-DB verification procedure
+- `database/migrations/00000000000000_template.sql` — Implemented: comment-only template, safe to apply, changes nothing
+- `database/seeders/README.md` — Implemented: synthetic-only seeding rules
+- Zero real migrations or seeds exist (verified: no other files under `database/`).
 
-No tables, columns, or constraints exist. Planned entities are listed in `docs/DATABASE.md`.
+No tables, columns, or constraints exist. Planned entities are listed below.
 
 ## Module boundaries (current truth)
 
 | Boundary | Implemented | Planned |
 |----------|-------------|---------|
 | Browser → Frontend | Yes (static mock UI) | Real API calls replacing mock imports |
-| Frontend → API | No (mock functions only) | PHP REST JSON over HTTPS, narrow CORS |
+| Frontend → API | Partial (mock functions + live `GET /api/health`) | Full PHP REST JSON over HTTPS, narrow CORS |
 | API → MySQL | No | PDO prepared statements, transactions |
 | Public vs Staff | Partial (routes exist, no auth) | Server-side session + role checks on every protected endpoint |
 
 ## What this doc does not do
 - Does not scaffold new folders or propose stack changes (see `RULES.md §4`: simplest structure that fits).
 - Does not document endpoints or schema — see `docs/API.md`, `docs/DATABASE.md`.
+
+---
+## Related notes
+- Role: spec — module boundaries + data flow (Implemented vs Planned).
+- Governed by: [[RULES]] · [[DEVELOPMENT_PLAN]] · [[docs/DECISIONS|DECISIONS]] (3-tier layout)
+- Details in: [[docs/API|API]] · [[docs/DATABASE|DATABASE]] · [[docs/brand-guidelines|brand-guidelines]]
+- Verified by: [[docs/TESTING|TESTING]] · Deploys via: [[docs/DEPLOYMENT|DEPLOYMENT]]
+- Work queue: [[TASKS]] · State: [[PROGRESS]]

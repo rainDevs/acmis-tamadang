@@ -31,3 +31,18 @@ Entry format: Date | Decision | Rationale | Owner/Approver | Affected tasks.
 - Rationale: Avoid ID collision between one-time control-file work and repeatable product work.
 - Owner/Approver: Project owner (via plan `tasks/plan.md`)
 - Affected tasks: TASK-901…908
+
+## 2026-10-15 — Phase 0 bundle: health endpoint, env config, migration workflow
+- Decision: Implemented minimal dependency-free PHP API (`GET /api/health` only), placeholder-only env examples + root `.gitignore`, and a documented migration workflow with a comment-only template (no real schema until TASK-001 rules are confirmed in TASK-008).
+- Rationale: Unblocks frontend→backend integration testing and establishes secrets/migration hygiene before any business logic lands; avoids inventing clinic policy, schema, or contracts.
+- Owner/Approver: Project owner (Full Phase 0 bundle selected 2026-10-15)
+- Affected tasks: TASK-002…006
+- Outstanding: live migration apply on a disposable MySQL database (no MySQL in this environment); production hosting/RTO/RPO unchanged.
+
+---
+## Related notes
+- Role: authority log — approved ground truth (`RULES > DECISIONS > PLAN > TASKS`).
+- Governed by: [[RULES]] · [[DEVELOPMENT_PLAN]]
+- Tracks: [[TASKS]] · [[PROGRESS]]
+- Details in: [[docs/ARCHITECTURE|ARCHITECTURE]] · [[docs/API|API]] · [[docs/DATABASE|DATABASE]] · [[docs/TESTING|TESTING]] · [[docs/DEPLOYMENT|DEPLOYMENT]]
+- History: [[tasks/plan|plan]]

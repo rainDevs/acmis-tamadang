@@ -82,3 +82,9 @@ TASKS.md (901, Done by this plan)
 - [ ] No task touches more than ~5 files — all touch 1 file
 - [ ] Checkpoints exist between phases — yes, 3 checkpoints
 - [ ] Human review required before implementation — pending
+
+---
+## Related notes
+- Role: history — bootstrap plan index that created TASK-901…908 (superseded by [[TASKS]]).
+- Governed by: [[RULES]] · [[DEVELOPMENT_PLAN]]
+- Queue: [[TASKS]] · State: [[PROGRESS]] · Authority: [[docs/DECISIONS|DECISIONS]]

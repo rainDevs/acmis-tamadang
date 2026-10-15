@@ -1,0 +1,38 @@
+# Dependencies
+backend/vendor/
+frontend/node_modules/
+
+# Environment (never commit real values)
+backend/.env
+frontend/.env
+*.env.local
+
+# Logs
+*.log
+backend/storage/logs/*
+!backend/storage/logs/.gitkeep
+npm-debug.log*
+
+# Builds
+frontend/dist/
+frontend/dist-ssr/
+
+# Database dumps (migrations in database/migrations/ MUST be committed)
+*.sql.dump
+*.backup
+*.bak
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.sw?
+
+# Obsidian - per-project vault (keep settings, ignore per-user workspace/cache)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
+.obsidian/hotkeys.json

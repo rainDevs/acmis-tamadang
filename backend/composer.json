@@ -1,0 +1,17 @@
+{
+  "name": "acmis/backend",
+  "description": "ACMIS PHP REST API (Barangay Tamadang Health Center)",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": ">=8.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "config": {
+    "optimize-autoloader": true
+  }
+}

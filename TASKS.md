@@ -192,7 +192,7 @@ Precedence: `RULES.md` > `docs/DECISIONS.md` > `DEVELOPMENT_PLAN.md` > this file
 Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners until their planning pass.
 
 ## TASK-002: Initialize React/Vite frontend and verify build
-- Status: Ready
+- Status: Done
 - Phase: Phase 0 — Requirements and project setup
 - Goal: Confirm the pre-existing React/Vite frontend builds and lints cleanly; no new UI work.
 - Dependencies: None
@@ -211,7 +211,7 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - [ ] Frontend pre-existed this task; build passed 2026-10-15 (2539 modules) during TASK-907
 
 ## TASK-003: Initialize PHP API and health endpoint
-- Status: In Progress
+- Status: Done
 - Phase: Phase 0 — Requirements and project setup
 - Goal: Minimal dependency-free PHP API skeleton with a `GET /api/health` endpoint returning the standard `{ success, message, data }` envelope.
 - Dependencies: None
@@ -236,7 +236,7 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - [ ] Dependency-free (no vendor install needed); PDO/auth deferred to TASK-007/013
 
 ## TASK-004: Add environment configuration and ignore secrets
-- Status: Ready
+- Status: Done
 - Phase: Phase 0 — Requirements and project setup
 - Goal: Placeholder-only example envs + root `.gitignore` so secrets never enter version control.
 - Dependencies: TASK-002, TASK-003
@@ -258,7 +258,7 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - [ ] None yet
 
 ## TASK-005: Establish MySQL migration workflow
-- Status: Ready
+- Status: Done
 - Phase: Phase 0 — Requirements and project setup
 - Goal: Documented naming/apply/verify workflow for `database/migrations/` + `database/seeders/` with zero real schema (schema deferred to TASK-008).
 - Dependencies: TASK-003
@@ -280,7 +280,7 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - [ ] Detailed schema deferred to TASK-008 after TASK-001 business rules confirmed
 
 ## TASK-006: Document architecture, API conventions, test commands
-- Status: Ready
+- Status: Done
 - Phase: Phase 0 — Requirements and project setup
 - Goal: Update baseline docs to reflect the Phase 0 bundle (health endpoint implemented, env + migration workflow established).
 - Dependencies: TASK-002, TASK-003
@@ -315,3 +315,10 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - TASK-013: Staff authentication + session security (depends TASK-007)
 - TASK-014: Staff authorization policies (depends TASK-013)
 - TASK-015: Appointment administration (depends TASK-012, TASK-014)
+
+---
+## Related notes
+- Role: queue — single source of truth for work (`Backlog → Ready → In Progress → In Review → Done`).
+- Governed by: [[RULES]] · [[docs/DECISIONS|DECISIONS]] · [[DEVELOPMENT_PLAN]]
+- State mirrors: [[PROGRESS]] · Created by: [[tasks/plan|plan]]
+- Specs: [[docs/ARCHITECTURE|ARCHITECTURE]] · [[docs/API|API]] · [[docs/DATABASE|DATABASE]] · Verified by: [[docs/TESTING|TESTING]] · Deploys via: [[docs/DEPLOYMENT|DEPLOYMENT]]
