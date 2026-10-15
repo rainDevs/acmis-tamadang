@@ -52,13 +52,14 @@ const steps = [
   },
 ]
 
+// Icon by approved service name (API ids are ints; names are the stable key).
 const serviceIcons = {
-  general: Stethoscope,
-  maternal: Baby,
-  immunization: Syringe,
-  senior: Users,
-  bp: Activity,
-  cert: FileCheck,
+  'General Consultation': Stethoscope,
+  'Maternal and Child Health Care': Baby,
+  'Immunization and Vaccination': Syringe,
+  'Senior Citizen Care': Users,
+  'Vitals & Screening': Activity,
+  'Health Certificate / Clearance': FileCheck,
 }
 
 export default function LandingPage() {
@@ -105,7 +106,7 @@ export default function LandingPage() {
               prepared.
             </p>
             <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
-              <Button asChild size="lg" className="h-12 bg-emerald-600 px-6 text-base transition-all duration-200 active:scale-[0.98] hover:bg-emerald-700">
+              <Button asChild size="lg" className="h-12 px-6 text-base transition-all duration-200 active:scale-[0.98] hover:bg-primary/90">
                 <Link to="/request">
                   <CalendarPlus className="size-5" aria-hidden="true" />
                   Book appointment
@@ -169,7 +170,7 @@ export default function LandingPage() {
             id="services"
             eyebrow="Our specialty"
             title="What you can request"
-            description="Sample services for this demo. Final services, schedules, and daily capacity are set by the health center."
+            description="Services, schedules, and daily capacity are set by the health center."
           />
           <div className="mt-8" aria-live="polite">
             {svcState === 'loading' ? (
@@ -187,7 +188,7 @@ export default function LandingPage() {
             ) : (
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {services.map((s, i) => {
-                  const Icon = serviceIcons[s.id] || HeartPulse
+                  const Icon = serviceIcons[s.name] || HeartPulse
                   return (
                     <motion.li
                       key={s.id}
@@ -201,7 +202,9 @@ export default function LandingPage() {
                         <Icon className="size-6" />
                       </span>
                       <h3 className="mt-3 text-base font-bold">{s.name}</h3>
-                      <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted-foreground">{s.description}</p>
+                      {s.description ? (
+                        <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted-foreground">{s.description}</p>
+                      ) : null}
                       <p className="mt-3 text-xs text-muted-foreground">About {s.duration_minutes} min per visit</p>
                       <Button asChild variant="outline" size="sm" className="mt-4 h-10 w-full">
                         <Link to="/request">Request this service</Link>
@@ -236,7 +239,7 @@ export default function LandingPage() {
               <span aria-hidden="true" className="pointer-events-none absolute -top-2 right-3 text-6xl font-extrabold text-muted/80 select-none">
                 {i + 1}
               </span>
-              <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700/10 text-emerald-800 dark:text-emerald-300" aria-hidden="true">
+              <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
                 <s.icon className="size-5" />
               </span>
               <div>

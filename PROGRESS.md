@@ -1,33 +1,38 @@
 # ACMIS Project Progress
-- Current phase: Phase 0 — Requirements and project setup (bundle complete)
-- Current task: None (next: TASK-001 clinic-rules confirmation — BLOCKED on health-center input — or TASK-007 DB connection)
-- Overall status: Phase 0 bundle Done. Frontend builds; `GET /api/health` live-verified; env + migration workflow established; all 10 control files present. No auth, no schema, no business logic yet.
-- Last verified change: TASK-002…006 bundle — backend health endpoint, env config, migration workflow, docs refresh
-- Last verification date: 2026-10-15
+- Current phase: Phase 1 — Technical foundation catch-up (frontend-first resequence; TASK-016 In Progress, backend paused)
+- Current task: None (dev DB `acmistamadangdb` ready — owner verifying frontend; next: TASK-017 staff screens or TASK-012 click-through findings)
+- Overall status: Public booking slice complete end-to-end (UI → API → MySQL, all live-verified). 5 endpoints live. Lookup + announcements still mock; no auth yet.
+- Last verified change: TASK-010 — creation endpoint, 27/27 CLI checks on disposable DB, live 201 + 409 + 422 (server log confirms), disposable DBs dropped
+- Last verification date: 2026-10-16
 
 ## Completed
 - [x] TASK-901…908 — project-control baseline (see prior entries; all checkpoints checked)
-- [x] TASK-002 — Frontend verified (pre-existing). `npm run build` exit 0 (~1.5s, dist/ emitted); `npm run lint` exit 0 (1 known warning `button.jsx:62` fast-refresh). No UI changes made.
-- [x] TASK-003 — PHP API + `GET /api/health` implemented (6 files: `composer.json`, `public/index.php`, `src/Shared/Response.php`, `src/Routes/api.php`, `src/Modules/Health/HealthController.php`, `tests/health_check.php`). Verified: `php -l` 5/5 clean; CLI test 9/9 PASS exit 0; `composer validate` valid; live `php -S` → `/api/health` 200 + envelope, `/api/nope` JSON 404 with no leaks.
-- [x] TASK-004 — Env config + gitignore. Root `.gitignore` + `backend/.env.example` + `frontend/.env.example` (placeholders only). Verified: no real `.env` files exist; migrations path not ignored.
-- [x] TASK-005 — Migration workflow established (`database/README.md`, comment-only `migrations/00000000000000_template.sql`, `seeders/README.md` synthetic-only). Verified: file review; live apply Outstanding (no MySQL here).
-- [x] TASK-006 — Docs refreshed: ARCHITECTURE (backend 6 files), API (`/api/health` Implemented), DATABASE (workflow + zero real migrations), TESTING (PHP commands + outcomes), DEPLOYMENT (env facts), DECISIONS (Phase 0 bundle entry).
+- [x] TASK-002 — Frontend verified (pre-existing). `npm run build` exit 0; `npm run lint` exit 0 (1 known warning `button.jsx:62`).
+- [x] TASK-003 — PHP API + `GET /api/health` (verified live 200 + safe 404).
+- [x] TASK-004 — Env config + gitignore (placeholders only; no real `.env` tracked).
+- [x] TASK-005 — Migration workflow established (comment-only template; live apply Outstanding).
+- [x] TASK-006 — Docs baseline refreshed.
+- [x] TASK-007 — DB connection + error conventions (health + `/api/health/db` probes, `ApiError` safe envelopes; verified 2026-10-16: CLI tests 9/9 + 23/23 PASS, live 200/503/404).
+- [x] TASK-008 — Services/availability schema live-verified on disposable MySQL 8.0.43 (`acmis_test`, dropped after): 5 migrations apply exit 0, 2 seeders exit 0, 4 tables / 6 services / 5 schedule rows confirmed, valid insert defaults `pending`, 6 rejections with expected codes, rollback returns 0 rows, live `/api/health/db` 200.
+- [x] TASK-009 — Public availability endpoint (24/24 CLI PASS, live 200 + 422; `$_GET`-on-null fix).
+- [x] TASK-010 — Public appointment creation endpoint (27/27 CLI PASS, live 201 + 409 + 422; `HY093` placeholder fix).
+- [x] TASK-011 — Booking UI live + services endpoint. Frontend: `BookingFlow` (service → schedule → details → review → confirmation), 5 step components, `RequestPage` rewrite, `api.js` cutover (services/availability/submit live; lookup + announcements stay mock), landing icon/description fixes. Backend: `GET /api/public/services` + `tests/services_check.php`. Verified: build 0, lint 0 (pre-existing warning only), services CLI 7/7, live E2E services 200 → availability 200 → POST 201 → row `pending` (server log confirms). Credentials transient env only, cleared; disposable DBs dropped.
+- [x] TASK-016 — Design foundation. Brand tokens in theme (emerald primary/ring, cyan accent, dark-mode covered); `Button lg` 44px; new `Field`/`TextInput`/`FormError`, `LoadingState`, `EmptyState`, Radix `Modal`, `StaffLayout` shell, live `request()` helper (mocks untouched). All `bg-emerald-*` one-offs routed through tokens; `StatusLookupForm` refactored onto patterns. Verified: `npm run build` exit 0, `npm run lint` exit 0 (1 pre-existing warning). Limitation: no browser tooling here — 360px/keyboard checks by class audit only (unprefixed mobile baseline, `sm:` enhancements, skip link, focus rings, `role=alert`/`aria-live`); real-device pass deferred to TASK-011/012.
 
 ## In progress
 - None
 
 ## Blocked / decisions needed
-- TASK-001 clinic rules (services, hours, capacity, approval flow, duplicate-patient process, roles, consultation fields, privacy/retention, notifications, hosting/RTO) — owner: health center; do not invent. Blocks TASK-008+ schema/API work.
-- Live migration apply on disposable MySQL — needs MySQL available; owner: whoever provisions dev DB.
+- TASK-001 remaining: Q-06 correction policy, Q-07 privacy approval, Q-08 notifications, Q-09 hosting, Q-10 RTO/RPO — owner: health center (+ legal review for Q-07).
 - RULES.md §4 / DEVELOPMENT_PLAN.md §3 diagrams still show `database/` under `backend/` — diagram fix needs approval (deferred, recorded in DECISIONS.md).
 
 ## Known issues
 - `npm run lint` emits 1 non-blocking warning (`button.jsx:62` fast-refresh).
-- Backend has no DB, auth, or business logic by design (deferred to TASK-007+).
-- `database/` has zero real migrations (template only) by design until TASK-001 resolves.
+- Backend has no auth, lookup endpoint, or staff wiring yet (TASK-013/015/017 next).
+- `PDO::exec()` on result-producing statements crashes this PHP/mysqlnd build silently (exit 255) — test harness uses `query()` + `closeCursor()` (see `docs/TESTING.md`).
 
 ## Next recommended task
-- TASK-001 — Confirm clinic rules with the health center (questionnaire + record answers in DECISIONS.md); reason: it gates every schema, endpoint, and workflow task (TASK-008…015). If owner input is unavailable, next buildable step is TASK-007 (DB connection + error conventions) on a disposable database.
+- TASK-017 staff screens (needs detailing to Ready) → resume backend at TASK-013. TASK-012 end-to-end click-through needs a browser/human — available anytime.
 
 ---
 ## Related notes

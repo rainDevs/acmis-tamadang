@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Loader2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Field, FormError, TextInput } from '@/components/ui/field'
 import StatusBadge from '@/components/shared/StatusBadge'
 import { lookupAppointment } from '@/services/api'
 
@@ -38,11 +39,8 @@ export default function StatusLookupForm({ compact = false }) {
       ) : null}
 
       <form onSubmit={onSubmit} className="mt-4 grid gap-3 sm:grid-cols-[1fr_160px_auto]">
-        <div>
-          <label htmlFor={compact ? 'ref-compact' : 'ref'} className="mb-1 block text-xs font-semibold">
-            Reference number <span aria-hidden="true" className="text-destructive">*</span>
-          </label>
-          <input
+        <Field label="Reference number" required htmlFor={compact ? 'ref-compact' : 'ref'}>
+          <TextInput
             id={compact ? 'ref-compact' : 'ref'}
             name="reference"
             autoComplete="off"
@@ -50,14 +48,11 @@ export default function StatusLookupForm({ compact = false }) {
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             required
-            className="h-10 w-full rounded-lg border bg-background px-3 font-mono text-sm uppercase outline-none placeholder:normal-case focus-visible:ring-2 focus-visible:ring-ring"
+            className="font-mono uppercase placeholder:normal-case"
           />
-        </div>
-        <div>
-          <label htmlFor={compact ? 'suffix-compact' : 'suffix'} className="mb-1 block text-xs font-semibold">
-            Contact last 4 digits <span aria-hidden="true" className="text-destructive">*</span>
-          </label>
-          <input
+        </Field>
+        <Field label="Contact last 4 digits" required htmlFor={compact ? 'suffix-compact' : 'suffix'}>
+          <TextInput
             id={compact ? 'suffix-compact' : 'suffix'}
             name="suffix"
             inputMode="numeric"
@@ -66,23 +61,19 @@ export default function StatusLookupForm({ compact = false }) {
             value={suffix}
             onChange={(e) => setSuffix(e.target.value.replace(/\D/g, '').slice(0, 4))}
             required
-            className="h-10 w-full rounded-lg border bg-background px-3 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="font-mono"
           />
-        </div>
+        </Field>
         <div className="flex items-end">
-          <Button type="submit" disabled={submitting} className="w-full bg-emerald-700 hover:bg-emerald-700/90 sm:w-auto">
-            {submitting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Search className="size-4" aria-hidden="true" />}
+          <Button type="submit" size="lg" disabled={submitting} className="w-full sm:w-auto">
+            {submitting ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Search className="size-4" aria-hidden="true" />}
             {submitting ? 'Checking…' : 'Check'}
           </Button>
         </div>
       </form>
 
       <div aria-live="polite" className="mt-3">
-        {state.status === 'error' ? (
-          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-900 dark:bg-red-950 dark:text-red-100">
-            {state.message}
-          </p>
-        ) : null}
+        {state.status === 'error' ? <FormError message={state.message} /> : null}
         {state.status === 'success' && state.result ? (
           <div className="rounded-lg border bg-muted/50 px-3 py-3 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">

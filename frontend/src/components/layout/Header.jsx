@@ -35,7 +35,7 @@ export default function Header() {
       </div>
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
         <Link to="/" className="flex min-w-0 items-center gap-2.5" aria-label="ACMIS home">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white" aria-hidden="true">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground" aria-hidden="true">
             <HeartPulse className="size-5" />
           </span>
           <span className="min-w-0 leading-tight">
@@ -60,7 +60,7 @@ export default function Header() {
               {l.label}
             </NavLink>
           ))}
-          <Button asChild size="sm" className="ml-2 bg-emerald-700 hover:bg-emerald-700/90">
+          <Button asChild size="sm" className="ml-2">
             <Link to="/admin/login">Staff login</Link>
           </Button>
           <span className="ml-1">
@@ -103,7 +103,7 @@ export default function Header() {
               </li>
             ))}
             <li className="pt-1">
-              <Button asChild className="w-full bg-emerald-700 hover:bg-emerald-700/90">
+              <Button asChild className="w-full">
                 <Link to="/admin/login" onClick={() => setOpen(false)}>
                   Staff login
                 </Link>

@@ -305,12 +305,211 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - [ ] Baseline from TASK-901…908 updated in place
 
 ## Still unscheduled (one-liners, later pass)
-- TASK-001: Confirm clinic rules, service list, hours, capacity, privacy requirements — BLOCKED on health-center input, do not invent
-- TASK-007: Database connection + API error conventions (depends TASK-005)
-- TASK-008: Services/availability data model (depends TASK-001, TASK-005)
-- TASK-009: Public availability endpoint (depends TASK-007, TASK-008)
-- TASK-010: Public appointment creation endpoint (depends TASK-009)
-- TASK-011: Mobile-first public booking UI (depends TASK-002, TASK-009)
+
+## TASK-001: Confirm clinic rules, service list, hours, capacity, privacy requirements
+- Status: Blocked
+- Phase: Phase 0 — Requirements and project setup
+- Goal: Get written health-center answers to every operational question in DEVELOPMENT_PLAN.md §16 so schema, endpoints, and workflows (TASK-008…015) encode approved policy instead of invented policy.
+- Dependencies: None (blocks TASK-008, TASK-009, TASK-010, TASK-011, TASK-013, TASK-014, and indirectly TASK-012, TASK-015)
+- Scope: Send the questionnaire below to the health center; record verbatim answers in `docs/DECISIONS.md` (one dated entry per answer, with owner/approver); unblock dependent tasks only for answered items.
+- Out of scope: Writing migrations, endpoints, or UI; inventing any policy, role, field, or legal conclusion; interpreting ambiguous answers without follow-up.
+- Expected files/modules:
+- `docs/DECISIONS.md` (answers recorded as approved decisions)
+- `TASKS.md` (this task → Done only when all gating answers are recorded; partial answers unblock item-by-item with explicit note)
+- `PROGRESS.md` (Blocked section tracks unanswered items)
+- Acceptance criteria:
+- [ ] Every Q-01…Q-10 below has either a recorded health-center answer (in DECISIONS.md with date + approver) or an explicit deferral with scope impact noted
+- [ ] No schema, endpoint, or workflow encodes an unanswered item
+- [ ] TASK-008…015 dependencies updated to reflect which answers gate which build step
+- Verification commands/tests:
+- [ ] File-exists + content review of DECISIONS.md entries (no test commands; this task is evidence-gathering, and claiming it Done without written answers is prohibited per RULES.md §18)
+- Security/privacy considerations:
+- [ ] Questionnaire and answers must contain no real patient data — service names and role titles only; sample records, if any, strictly synthetic
+- Notes/decisions:
+- [ ] Round 1 answers recorded in `docs/DECISIONS.md` 2026-10-16: Q-01 [x] 6 services; Q-02 [x] Mon–Fri 8:00am–5:00pm, 30-min, 1/slot, 18 slots/day (follow-up confirmed); Q-03 [x] always staff-approved; Q-04 [x] check-at-visit procedure, no system dedup; Q-05 [~] role names only, permission matrix deferred; Q-06 [~] field structure transcribed (labels only), correction policy OPEN; Q-07 [~] privacy draft PROPOSED, approval pending; Q-08/09/10 [ ] unknown
+- [ ] Privacy source-photo warning: owner-provided form photo contains real patient identifiers — never commit; delete from Temp after use
+- Open questions (from DEVELOPMENT_PLAN.md §16; do NOT invent answers):
+- [ ] Q-01 Services: Which appointment services are offered? (exact names for `appointment_services`)
+- [ ] Q-02 Schedule: Operating hours per day, holidays/closures, slot duration per service, capacity (patients per slot / per day)?
+- [ ] Q-03 Approval: Are requests always pending staff approval before confirmation? Any auto-approved service?
+- [ ] Q-04 Duplicates: How are duplicate residents/patients identified and resolved (which identifiers, who merges)?
+- [ ] Q-05 Roles: Which staff roles exist, and what may each role read or change (appointments, patients, consultations, reports, admin)?
+- [ ] Q-06 Consultations: Required fields in a consultation record? May completed consultations be edited, and do corrections need an audit trail?
+- [ ] Q-07 Privacy: Approved privacy notice text, data retention period, authorized disclosure / correction process (per Data Privacy Act of 2012 guidance)?
+- [ ] Q-08 Notifications: Will the system send SMS/email? If yes, approved provider, cost bearer, and message content?
+- [ ] Q-09 Hosting: Where is production hosted, who maintains it, how are backups protected?
+- [ ] Q-10 Recovery: Approved recovery-time and data-loss tolerances (RTO/RPO)?
+## TASK-007: Database connection + API error conventions
+- Status: Done
+- Phase: Phase 1 — Technical foundation
+- Goal: PDO MySQL connection factory from env plus standard safe-error helpers and a `GET /api/health/db` probe. No schema, no auth, no business logic.
+- Dependencies: TASK-005
+- Scope: `backend/src/Config/config.php` (env + dbConfig), `backend/src/Database/Connection.php` (PDO factory + ping), `backend/src/Shared/ApiError.php` (401/403/404/422/500/503 safe envelopes + server-side log without secrets), `backend/src/Modules/Health/DbHealthController.php` (`GET /api/health/db`), route entry in `backend/src/Routes/api.php`, front-controller wiring in `backend/public/index.php`, CLI test `backend/tests/db_connection_check.php`.
+- Out of scope: Any table/column/migration; auth/session logic (TASK-013); inventing clinic policy; changing `GET /api/health` behavior.
+- Expected files/modules:
+- `backend/src/Config/config.php`
+- `backend/src/Database/Connection.php`
+- `backend/src/Shared/ApiError.php`
+- `backend/src/Modules/Health/DbHealthController.php`
+- `backend/src/Routes/api.php`
+- `backend/public/index.php`
+- `backend/tests/db_connection_check.php`
+- Acceptance criteria:
+- [ ] PDO factory uses env `DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASS` (+ `DB_CHARSET`, default `utf8mb4`), `ERRMODE_EXCEPTION`, `FETCH_ASSOC`, `EMULATE_PREPARES=false`; prepared statements only
+- [ ] Error helpers return `{ success: false, message, data }` with correct codes (401/403/404/422/500/503) and safe messages (no SQL/stack/paths/secrets/DSN)
+- [ ] `GET /api/health/db` returns 200 when `SELECT 1` succeeds, 503 `Database unavailable.` when it does not — never leaking internals
+- [ ] `php -l` clean on all new/changed PHP files; CLI tests exit 0; live `php -S` checks pass for `/api/health`, `/api/health/db`, unknown route
+- Verification commands/tests:
+- [ ] `php -l` per file; `php backend/tests/health_check.php`; `php backend/tests/db_connection_check.php`; `composer validate`; live `php -S localhost:8000 -t backend/public` + checks for 200/503/404 bodies
+- Security/privacy considerations:
+- [ ] No credentials in code/logs/responses; server log records class+code only (message scrubbed of password); no patient data anywhere
+- Notes/decisions:
+- [ ] MySQL server absent here — live DB-success path verified via injected PDO (sqlite memory) in CLI test; live HTTP `/api/health/db` expected 503 safely until MySQL is provisioned
+## TASK-008: Services/availability data model
+- Status: Done
+- Phase: Phase 2 — Public appointment request vertical slice
+- Goal: Version-controlled MySQL schema for the approved service catalog, weekly schedule template, holiday closures, and appointment requests — no endpoints, no UI, no auth columns.
+- Dependencies: TASK-001 (partial: Q-01 services, Q-02 schedule, Q-03 always-approved answered 2026-10-16), TASK-005 (workflow)
+- Scope: 4 migrations (`appointment_services`, `clinic_schedules`, `schedule_closures`, `appointments`) + 2 seeders (6 approved services, Mon–Fri 08:00–17:00 template). Time-zone policy documented (slots = Asia/Manila wall-clock DATE/TIME; audit = TIMESTAMP UTC). Capacity rule encoded as 1/slot; overbooking prevention via transactional locking in TASK-010 (no UNIQUE on slot — cancelled/completed rows must coexist), UNIQUE on `reference_no` only.
+- Out of scope: Endpoints (TASK-009/010), UI (TASK-011), staff/actor columns (TASK-013), status-history table (TASK-015), consultation tables (later, Q-06 open), permission matrix (TASK-014), any invented policy.
+- Expected files/modules:
+- `database/migrations/20261016000001_create_appointment_services.sql`
+- `database/migrations/20261016000002_create_clinic_schedules.sql`
+- `database/migrations/20261016000003_create_schedule_closures.sql`
+- `database/migrations/20261016000004_create_appointments.sql`
+- `database/seeders/20261016000001_appointment_services.sql`
+- `database/seeders/20261016000002_clinic_schedules_weekday.sql`
+- Acceptance criteria:
+- [ ] Tables/keys match DECISIONS.md 2026-10-16 answers only (6 service names, Mon–Fri 8–17, 30-min, 1/slot, pending-default, canonical ENUM from RULES §10)
+- [ ] InnoDB + utf8mb4_unicode_ci; PKs, FK (service) with named constraints, CHECKs on day/window/duration/capacity
+- [ ] Each file has rollback header; no destructive content; no patient data in seeds (reference data only)
+- [ ] Fresh-DB apply on disposable MySQL verified 2026-10-16 (see Notes)
+- Verification commands/tests:
+- [ ] File review vs DECISIONS.md answers; `"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u <devuser> -p acmis_test < migration` per file in order + seeders; duplicate-key + FK-violation + CHECK-violation negative tests; `SHOW CREATE TABLE` spot-check
+- Security/privacy considerations:
+- [ ] Seeds contain approved reference data only (service names, weekday hours) — no patient, contact, or credential data; dev credentials never committed or logged
+- Notes/decisions:
+- [ ] MySQL80 service Running but `root` nopassword denied 2026-10-16; live-apply needs disposable-DB credentials from owner
+- [ ] 2026-10-16: owner chose self-run verification — then authorized agent-run with local dev credential (transient env only, never written to files; cleared afterwards). Full verification passed (see outcomes above). Disposable `acmis_test` dropped after run; no residue.
+## TASK-009: Public availability endpoint
+- Status: Done
+- Phase: Phase 2 — Public appointment request vertical slice
+- Goal: Public `GET /api/public/availability` returning per-day slot detail (template − closures − pending/approved bookings) with `slots_left`/`is_available`. No auth, no patient data in responses.
+- Dependencies: TASK-007, TASK-008 (both Done)
+- Scope: `backend/src/Modules/Availability/AvailabilityService.php` (slot computation), `.../AvailabilityController.php` (param validation + envelope), route entry, front-controller wiring, CLI test `backend/tests/availability_check.php` (disposable-DB backed).
+- Out of scope: Appointment creation (TASK-010), UI wiring (TASK-011), auth, any schema change.
+- Expected files/modules:
+- `backend/src/Modules/Availability/AvailabilityService.php`
+- `backend/src/Modules/Availability/AvailabilityController.php`
+- `backend/src/Routes/api.php`
+- `backend/public/index.php`
+- `backend/tests/availability_check.php`
+- Acceptance criteria:
+- [ ] `GET /api/public/availability?service_id=&from=&to=` returns 200 + day objects `{ date, service_id, service_name, closed, slots[{ start_time, capacity, booked, slots_left, is_available }], slots_left, capacity }`; day totals match mock keys (`date`, `service_id`, `slots_left`, `capacity`)
+- [ ] pending + approved bookings occupy capacity; rejected/cancelled/completed/no_show free it; closures → `closed:true`, weekends → empty slots; past slots `is_available:false`
+- [ ] Invalid service/date/range → 422 safe messages; DB down → 503; no requester/contact data anywhere in responses
+- [ ] `php -l` clean; CLI test exits 0 on disposable DB; live `php -S` 200 + 422 checks pass; disposable DB dropped after
+- Verification commands/tests:
+- [ ] `php -l` per file; `php backend/tests/availability_check.php` (with transient dev-DB env); live `php -S` + checks for 200/422/404 bodies
+- Security/privacy considerations:
+- [ ] Public endpoint returns counts only — no names, contacts, or medical data; bounded window (default 14d, max 31d); dev credentials transient env only, never in files
+- Notes/decisions:
+- [ ] Availability counts pending+approved as occupying (capacity 1/slot); documented in `docs/API.md`
+## TASK-010: Public appointment creation endpoint
+- Status: Done
+- Phase: Phase 2 — Public appointment request vertical slice
+- Goal: Public `POST /api/public/appointments` creating a `pending` request with generated reference, under a transactional capacity lock. No auth, no lookup, no status changes.
+- Dependencies: TASK-009 (Done)
+- Scope: `backend/src/Modules/Appointments/AppointmentService.php` (transaction + `SELECT … FOR UPDATE` capacity check + insert), `.../AppointmentController.php` (JSON body parsing + server-side validation), `SlotTakenException`, route entry, wiring, CLI test `backend/tests/appointment_create_check.php` (disposable-DB backed).
+- Out of scope: Availability changes, lookup endpoint, status workflow (TASK-015), UI (TASK-011), auth, schema changes.
+- Expected files/modules:
+- `backend/src/Modules/Appointments/AppointmentService.php`
+- `backend/src/Modules/Appointments/AppointmentController.php`
+- `backend/src/Modules/Appointments/SlotTakenException.php`
+- `backend/src/Routes/api.php`
+- `backend/public/index.php`
+- `backend/tests/appointment_create_check.php`
+- Acceptance criteria:
+- [ ] Valid `POST` (name, `09xxxxxxxxx` mobile, active service, future templated non-closed on-grid slot) → 201 `{ reference_no (ACMIS-YYYY-XXXXXX), status: pending, service_id, appointment_date, start_time }`
+- [ ] Missing/bad fields, unknown service, past/off-grid/closed/weekend slot → 422 safe messages; taken slot → 409 `Selected schedule is no longer available.`; DB down → 503; malformed JSON → 422
+- [ ] Capacity enforced inside transaction (`FOR UPDATE`); second concurrent-shaped booking of same slot rejected; cancelled slot re-bookable
+- [ ] `php -l` clean; CLI test exits 0 on disposable DB; live `php -S` 201 + 409 + 422 pass; disposable DB dropped after
+- Verification commands/tests:
+- [ ] `php -l` per file; `php backend/tests/appointment_create_check.php` (transient dev-DB env); live `php -S` + POST checks for 201/409/422 bodies
+- Security/privacy considerations:
+- [ ] All client data treated untrusted (RULES §6); prepared statements only; errors leak no SQL; response echoes only requester's own submitted data; dev credentials transient env only
+- Notes/decisions:
+- [ ] Mobile rule mirrors frontend mock (`09` + 9 digits) — existing convention, no contradicting policy; 409 chosen for taken slot (documented in `docs/API.md`)
+## TASK-016: Frontend design foundation (tokens, layouts, patterns)
+- Status: Done
+- Phase: Phase 1 — Technical foundation (catch-up; originally planned before features)
+- Goal: Establish the mobile-first visual foundation every screen builds on: design tokens, public + staff layouts, and reusable form/table/dialog/loading/empty/error patterns compliant with `docs/brand-guidelines.md`.
+- Dependencies: None (frontend-only; must precede TASK-011 and TASK-017)
+- Scope: Audit existing `frontend/src` (keep working conventions); tokens in `index.css`/theme (Tailwind v4 syntax); `layouts/` (public now, staff shell for TASK-017); shared patterns (`components/shared`, `components/ui` extensions as needed, `lib/` helpers); API-client cutover point (central `services/api.js` ready to swap mock→live per function).
+- Out of scope: Booking flow itself (TASK-011), staff screens (TASK-017), any backend change, new dependencies without approval.
+- Expected files/modules:
+- `frontend/src/index.css`
+- `frontend/src/layouts/`
+- `frontend/src/components/shared/`
+- `frontend/src/components/ui/`
+- `frontend/src/lib/`
+- Acceptance criteria:
+- [ ] Tokens cover color/type/spacing/radius/focus states; dark-mode behavior defined (existing `ThemeToggle` kept working)
+- [ ] Mobile-first baseline verified at 360px width (no horizontal overflow) on layout + pattern showcases
+- [ ] Form (label/error/disabled/submitting), table→card, dialog, loading, empty, and error patterns each exist once and are reused (no one-offs in later tasks)
+- [ ] `npm run build` exit 0; `npm run lint` exit 0 (no new warnings); keyboard + focus-visible checks pass on patterns
+- Verification commands/tests:
+- [ ] `npm run build` + `npm run lint` from `frontend/`; narrow-viewport (360px) + keyboard walkthrough of touched screens, outcomes recorded
+- Security/privacy considerations:
+- [ ] No secrets in frontend; patterns include safe-error display guidance (no backend internals rendered)
+- Notes/decisions:
+- [ ] Foundation for the frontend-first resequence (DECISIONS.md 2026-10-16)
+
+## TASK-011: Mobile-first public booking UI (live endpoints)
+- Status: Done
+- Phase: Phase 2 — Public appointment request vertical slice
+- Goal: Replace the `RequestPage` stub with a working mobile-first flow (service → date → slot → details → review → confirmation with reference) wired to live `GET /api/public/availability` + `POST /api/public/appointments`; confirmation shows reference + pending-notice.
+- Dependencies: TASK-002, TASK-009 (Done), TASK-016 (foundation)
+- Scope: `features/appointments/` booking components, `pages/public/RequestPage.jsx` rewrite, `services/api.js` live wiring for availability/submit (keep mock fallback only where the endpoint doesn't exist yet — none here), loading/empty/validation/error/success states, 409-taken-slot recovery path.
+- Scope amendment 2026-10-16: plus minimal `GET /api/public/services` backend endpoint (planned `DEVELOPMENT_PLAN.md §9` family). Justification: no live service list exists; deriving names from availability leaves the landing page on stale mock data (wrong durations/names vs approved Q-01/Q-02). Endpoint is read-only, no policy invented; tested like the others.
+- Out of scope: Status lookup redesign (exists), staff UI (TASK-017), backend changes.
+- Expected files/modules:
+- `frontend/src/features/appointments/`
+- `frontend/src/pages/public/RequestPage.jsx`
+- `frontend/src/services/api.js`
+- Acceptance criteria:
+- [ ] Full flow completable at 360px against live API; real reference returned and displayed; pending-approval notice shown
+- [ ] Taken-slot 409 surfaces a safe retry affordance (re-pick slot, no data loss); validation mirrors server rules; network failure states handled
+- [ ] `npm run build` + `npm run lint` clean; keyboard walkthrough passes
+- Verification commands/tests:
+- [ ] Frontend build/lint + live end-to-end booking on disposable DB (create → confirm reference → verify row), recorded per `docs/TESTING.md`
+- Security/privacy considerations:
+- [ ] No patient data in URLs/titles/logs; minimal fields only; safe error display
+- Notes/decisions:
+- [x] Mock `service_id` strings vs API ints mapped: landing icons key by approved `name`; booking flow uses int ids throughout (recorded in `docs/API.md`)
+- [ ] Post-acceptance polish 2026-10-16: date chips replaced with a month-grid calendar (`ScheduleStep` rewrite + remount-on-fetch via key); slot grid, flow, and contracts unchanged
+
+## TASK-017: Staff screens (login + appointment list/detail, mock-backed)
+- Status: Backlog
+- Phase: Phase 3 — Staff authentication and permissions (design-ahead)
+- Goal: Design staff login + appointment list/detail screens against Planned `DEVELOPMENT_PLAN.md §9` contracts using clearly-labeled temporary mock states, so TASK-013/014/015 APIs are shaped by real UI needs.
+- Dependencies: TASK-016 (foundation)
+- Scope: `pages/admin/` + `features/staff/` screens, staff layout shell, mock states marked `TEMPORARY-MOCK` in code + UI badge; protected-route structure ready for real auth.
+- Out of scope: Real auth/API wiring (TASK-013+), backend changes, permission-matrix invention (still deferred per Q-05).
+- Expected files/modules:
+- `frontend/src/pages/admin/`
+- `frontend/src/features/staff/`
+- `frontend/src/layouts/`
+- Acceptance criteria:
+- [ ] Login, list (filter/pagination structure), and detail screens render all states (loading/empty/error) at 360px; every mock datum labeled temporary + synthetic
+- [ ] Documented list of endpoint needs for TASK-013/014/015 (params, shapes, filters) derived from the screens
+- [ ] `npm run build` + `npm run lint` clean
+- Verification commands/tests:
+- [ ] Frontend build/lint + viewport/keyboard walkthrough; mock states never presented as integration proof
+- Security/privacy considerations:
+- [ ] Synthetic data only; no real credentials in mock login; protected-route scaffolding blocks nothing real yet (documented as non-enforcing until TASK-013)
+- Notes/decisions:
+- [ ] Design-ahead per frontend-first resequence; wiring lands with TASK-013/014/015
 - TASK-012: Verify public booking end to end (depends TASK-010, TASK-011)
 - TASK-013: Staff authentication + session security (depends TASK-007)
 - TASK-014: Staff authorization policies (depends TASK-013)

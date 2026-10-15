@@ -1,15 +1,52 @@
-// Mock API client — frontend-first development.
-// Keep the { success, message, data } shape from DEVELOPMENT_PLAN §7
-// so switching to the PHP REST API later is a drop-in replacement.
+// API client — live PHP backend with mock fallback only where no endpoint
+// exists yet (announcements board, status lookup). Envelope everywhere:
+// { success, message, data }; thrown Error carries .status + .payload.
 //
-// Future backend mapping:
-//   getServices()        -> GET /api/v1/public/services (to be specified)
-//   lookupAppointment()  -> GET /api/v1/public/appointments/{reference}
-//   submitAppointment()  -> POST /api/v1/public/appointments
+// Live mapping:
+//   getServices()            -> GET /api/public/services
+//   getAvailabilitySummary() -> GET /api/public/availability
+//   submitAppointment()      -> POST /api/public/appointments
+//   lookupAppointment()      -> mock (no public lookup endpoint yet)
 
-import { mockAnnouncements, mockAppointments, mockAvailability, mockServices } from './mockData'
+import { mockAnnouncements, mockAppointments } from './mockData'
 
 const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Live backend cutover point (TASK-016). Mock functions below stay as-is until
+// TASK-011 switches each one to request(). Error shape stays mock-compatible:
+// thrown Error with .status and .payload = { success: false, message, data }.
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
+
+export async function request(path, { method = 'GET', body } = {}) {
+  let res
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    })
+  } catch {
+    const err = new Error('Cannot reach the server. Check your connection and try again.')
+    err.status = 0
+    err.payload = { success: false, message: err.message, data: null }
+    throw err
+  }
+  let payload = null
+  try {
+    payload = await res.json()
+  } catch {
+    payload = null
+  }
+  if (!res.ok || !payload || payload.success !== true) {
+    const message =
+      (payload && payload.message) || 'Something went wrong. Please try again.'
+    const err = new Error(message)
+    err.status = res.status
+    err.payload = { success: false, message, data: (payload && payload.data) ?? null }
+    throw err
+  }
+  return payload
+}
 
 function ok(message, data) {
   return { success: true, message, data }
@@ -23,13 +60,16 @@ function fail(message, data = null, status = 400) {
 }
 
 export async function getServices() {
-  await delay(250)
-  return ok('Services retrieved.', mockServices)
+  return request('/api/public/services')
 }
 
-export async function getAvailabilitySummary() {
-  await delay(250)
-  return ok('Availability retrieved.', mockAvailability)
+export async function getAvailabilitySummary({ serviceId, from, to } = {}) {
+  const params = new URLSearchParams()
+  if (serviceId !== undefined && serviceId !== '') params.set('service_id', String(serviceId))
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+  const query = params.toString()
+  return request(`/api/public/availability${query ? `?${query}` : ''}`)
 }
 
 export async function getAnnouncements() {
@@ -58,19 +98,13 @@ export async function lookupAppointment(referenceNo, contactSuffix) {
   return ok('Appointment status retrieved.', publicSafe)
 }
 
-// Mock submission: validates, returns pending + generated reference.
+// Live submission. Canonical payload uses API field names; the booking flow
+// collects them directly. Server revalidates everything (422) and rejects
+// taken slots (409) — both surface as thrown Errors with .status.
 export async function submitAppointment(payload) {
-  await delay(500)
-  const { fullName, contactNo, serviceId, scheduleDate } = payload || {}
-  if (!fullName || !contactNo || !serviceId || !scheduleDate) {
-    return fail('Name, contact number, service, and preferred date are required.', null, 422)
-  }
-  if (!/^09\d{9}$/.test(String(contactNo).replace(/\s/g, ''))) {
-    return fail('Enter a valid 11-digit mobile number (e.g. 09xx xxx xxxx).', null, 422)
-  }
-  const rand = Math.floor(100000 + Math.random() * 900000)
-  return ok('Appointment request submitted.', {
-    reference_no: `ACMIS-2026-${String(rand).slice(0, 6)}`,
-    status: 'pending',
+  const { full_name, contact_number, service_id, appointment_date, start_time } = payload || {}
+  return request('/api/public/appointments', {
+    method: 'POST',
+    body: { full_name, contact_number, service_id, appointment_date, start_time },
   })
 }

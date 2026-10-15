@@ -55,7 +55,7 @@ export default function CareSplit() {
             </li>
           ))}
         </ul>
-        <Button asChild size="lg" className="mt-6 h-12 bg-emerald-600 px-6 text-base active:scale-[0.98] hover:bg-emerald-700">
+        <Button asChild size="lg" className="mt-6 h-12 px-6 text-base active:scale-[0.98] hover:bg-primary/90">
           <Link to="/request">
             <CalendarPlus className="size-5" aria-hidden="true" />
             Request appointment

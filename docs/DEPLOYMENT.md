@@ -9,6 +9,9 @@ Status: **No production deployment exists as of 2026-10-15.** No prod hosting se
 - Never commit passwords, keys, session secrets, or real patient data.
 
 ## Local development (verified 2026-10-15 unless noted)
+- Dev database: `acmistamadangdb` on local MySQL 8.0.43 (provisioned 2026-10-16 at owner request; all migrations + both seeders applied; verified 4 tables / 6 services / 5 schedule rows; `appointments` empty for UI-driven booking). Credentials stay outside version control — pass via env per run, never commit.
+- Local env files (gitignored, owner-requested 2026-10-16): `backend/.env` (dev DB settings; loaded by `Config::loadEnvFile()` in the front controller — real env vars win, values never logged) and `frontend/.env` (`VITE_API_BASE_URL`; Vite reads it on `npm run dev` start, restart dev after editing). Verified: `php -S` with a clean environment connects via `backend/.env` alone (`/api/health/db` 200).
+- CORS: whitelisted dev origins (`localhost:5173`, `127.0.0.1:5173`) reflected by the front controller; override with `CORS_ALLOWED_ORIGINS` env for other hosts. Fixed 2026-10-16 after the browser blocked Vite→API calls despite HTTP 200s (verified: reflected ACAO, 204 preflight, no header for unlisted origins).
 - Frontend: `cd frontend && npm run dev` (Vite); verified toolchain via `npm run build` / `npm run lint` (see `docs/TESTING.md`).
 - Backend: `php -S localhost:8000 -t backend/public` from repo root, then `GET /api/health` (verified live 200 + JSON 404 for unknown routes).
 - Backend runtime: PHP 8.2.12 CLI; Composer 2.9.2 available (`composer validate` clean); local stack may use XAMPP/Apache + MySQL per plan (MySQL CLI not present here).

@@ -10,4 +10,8 @@ declare(strict_types=1);
  */
 return [
     'GET /api/health' => [\App\Modules\Health\HealthController::class, 'check'],
+    'GET /api/health/db' => [\App\Modules\Health\DbHealthController::class, 'check'],
+    'GET /api/public/availability' => [\App\Modules\Availability\AvailabilityController::class, 'handle'],
+    'GET /api/public/services' => [\App\Modules\Services\ServicesController::class, 'list'],
+    'POST /api/public/appointments' => [\App\Modules\Appointments\AppointmentController::class, 'handle'],
 ];

@@ -17,7 +17,7 @@ export default function StickyMobileCta() {
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
       <div className="grid grid-cols-[1.2fr_1fr] gap-2.5 px-4 py-3">
-        <Button asChild size="lg" className="h-12 bg-emerald-600 text-base active:scale-[0.98] hover:bg-emerald-700">
+        <Button asChild size="lg" className="h-12 text-base active:scale-[0.98]">
           <Link to="/request">
             <CalendarPlus className="size-5" aria-hidden="true" />
             Request
