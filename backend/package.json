@@ -1,0 +1,9 @@
+{
+  "name": "acmis-backend",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Shortcut scripts for the ACMIS PHP REST API. No Node dependencies — PHP only; this file exists so `npm start` boots the dev server.",
+  "scripts": {
+    "start": "php -S localhost:8000 -t public"
+  }
+}

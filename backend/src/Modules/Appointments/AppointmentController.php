@@ -49,6 +49,11 @@ final class AppointmentController
             return self::invalid('Enter a valid 11-digit mobile number (e.g. 09xx xxx xxxx).');
         }
 
+        $address = trim((string) ($body['address'] ?? ''));
+        if ($address === '' || mb_strlen($address) > 255) {
+            return self::invalid('Address is required.');
+        }
+
         $serviceRaw = trim((string) ($body['service_id'] ?? ''));
         if (!ctype_digit($serviceRaw)) {
             return self::invalid('Unknown or inactive service.');
@@ -106,6 +111,7 @@ final class AppointmentController
                 'start_time' => $timeSec,
                 'requester_name' => $name,
                 'contact_number' => $contact,
+                'address' => $address,
             ]);
         } catch (SlotTakenException $e) {
             return [

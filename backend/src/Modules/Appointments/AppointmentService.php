@@ -17,7 +17,7 @@ use Throwable;
 final class AppointmentService
 {
     /**
-     * @param array{service_id: int, appointment_date: string, start_time: string, requester_name: string, contact_number: string} $data start_time "HH:MM:SS"
+     * @param array{service_id: int, appointment_date: string, start_time: string, requester_name: string, contact_number: string, address: string} $data start_time "HH:MM:SS"
      * @return array{reference_no: string, status: string, service_id: int, appointment_date: string, start_time: string}
      *
      * @throws SlotTakenException
@@ -47,8 +47,8 @@ final class AppointmentService
 
             $reference = self::generateReference($pdo);
             $insert = $pdo->prepare(
-                'INSERT INTO appointments (reference_no, service_id, appointment_date, start_time, requester_name, contact_number, status)'
-                . " VALUES (:ref, :sid, :date, :time, :name, :contact, 'pending')"
+                'INSERT INTO appointments (reference_no, service_id, appointment_date, start_time, requester_name, contact_number, address, status)'
+                . " VALUES (:ref, :sid, :date, :time, :name, :contact, :address, 'pending')"
             );
             $insert->execute([
                 ':ref' => $reference,
@@ -57,6 +57,7 @@ final class AppointmentService
                 ':time' => $data['start_time'],
                 ':name' => $data['requester_name'],
                 ':contact' => $data['contact_number'],
+                ':address' => $data['address'],
             ]);
 
             $pdo->commit();

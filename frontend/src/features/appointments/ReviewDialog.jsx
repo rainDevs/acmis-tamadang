@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FormError } from '@/components/ui/field'
 import { Modal } from '@/components/ui/dialog'
+import { toAmPm } from '@/lib/time'
 
 // Review before submit. Confirm is guarded against double taps; the server
 // revalidates and may still answer 409 (slot taken meanwhile).
@@ -22,11 +23,15 @@ export default function ReviewDialog({ open, onClose, summary, submitting, error
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Time</dt>
-          <dd className="font-mono font-semibold">{summary.slot}</dd>
+          <dd className="font-semibold">{toAmPm(summary.slot)}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Name</dt>
           <dd className="text-right font-semibold">{summary.fullName}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-muted-foreground">Address</dt>
+          <dd className="text-right font-semibold">{summary.address}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Mobile</dt>

@@ -67,6 +67,12 @@ Entry format: Date | Decision | Rationale | Owner/Approver | Affected tasks.
 - Owner/Approver: Project owner (TASK-010 selected 2026-10-16)
 - Affected tasks: TASK-010 (Done); unblocks TASK-011/012
 
+## 2026-10-16 — Appointment address field approved (anti-prank verification)
+- Decision: Public booking collects `address` (required, ≤255 chars), persisted in `appointments.address`, so staff can verify whether a request is legitimate. No other new fields.
+- Rationale: Owner request — name + mobile alone can't distinguish real from prank requests.
+- Owner/Approver: Project owner (requested 2026-10-16)
+- Affected tasks: TASK-010 (contract extended via migration `20261016000005`), TASK-011 (details step)
+
 ## 2026-10-16 — TASK-011 amendment: services endpoint added (no policy invented)
 - Decision: Added read-only `GET /api/public/services` beyond TASK-011's original no-backend scope. Deriving the list from availability would have left the landing page on stale mock data (wrong durations/names vs approved Q-01/Q-02). Endpoint is in the planned `DEVELOPMENT_PLAN.md §9` family, tested, documented.
 - Owner/Approver: Project owner (scope amendment recorded 2026-10-16)

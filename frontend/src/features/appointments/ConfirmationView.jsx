@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { CheckCircle2, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import StatusBadge from '@/components/shared/StatusBadge'
+import { toAmPm } from '@/lib/time'
 
 // Confirmation after 201. Reference is selectable + copyable; nothing
 // sensitive is shown or stored (name/contact are cleared by the parent).
@@ -23,7 +24,7 @@ export default function ConfirmationView({ referenceNo, serviceName, date, slot 
       <CheckCircle2 className="mx-auto size-10 text-primary" aria-hidden="true" />
       <h2 className="mt-2 text-lg font-bold">Request received</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        {serviceName} · {date} · {slot}
+        {serviceName} · {date} · {toAmPm(slot)}
       </p>
       <output className="mt-4 block rounded-xl bg-muted/60 px-4 py-3 font-mono text-lg font-bold tracking-wide select-all">
         {referenceNo}

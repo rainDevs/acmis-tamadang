@@ -488,6 +488,9 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - Notes/decisions:
 - [x] Mock `service_id` strings vs API ints mapped: landing icons key by approved `name`; booking flow uses int ids throughout (recorded in `docs/API.md`)
 - [ ] Post-acceptance polish 2026-10-16: date chips replaced with a month-grid calendar (`ScheduleStep` rewrite + remount-on-fetch via key); slot grid, flow, and contracts unchanged
+- [ ] Address field 2026-10-16 (approved, DECISIONS.md): migration `20261016000005` (applied to `acmistamadangdb`), API requires non-empty ≤255, UI details step + review row, CLI suite extended (missing-address 422, persistence), live 201 + row verified on dev DB
+- [ ] Motion pass 2026-10-16: `Reveal` entrance on every page (`RequestPage` staggered, `StatusPage`, `NotFoundPage`, staff placeholder, `SectionHeading` internally, booking confirmation); step transitions were already reduced-motion-gated; Header/Footer/ThemeToggle chrome intentionally static
+- [x] Post-acceptance polish 2026-10-16 (animation): `StepPanel` in `BookingFlow.jsx` — subtle step transition (`AnimatePresence mode="wait"`, opacity + 16px x, 0.25s easeOut, no entrance on page load) + focus moves to an sr-only step heading on every step change (skipped on mount); reduced-motion users get an instant swap. Verified: `npm run build` exit 0, `npm run lint` exit 0 (pre-existing warning only). Real click-through still belongs to TASK-012.
 
 ## TASK-017: Staff screens (login + appointment list/detail, mock-backed)
 - Status: Backlog

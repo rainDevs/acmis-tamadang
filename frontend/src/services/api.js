@@ -102,9 +102,9 @@ export async function lookupAppointment(referenceNo, contactSuffix) {
 // collects them directly. Server revalidates everything (422) and rejects
 // taken slots (409) — both surface as thrown Errors with .status.
 export async function submitAppointment(payload) {
-  const { full_name, contact_number, service_id, appointment_date, start_time } = payload || {}
+  const { full_name, address, contact_number, service_id, appointment_date, start_time } = payload || {}
   return request('/api/public/appointments', {
     method: 'POST',
-    body: { full_name, contact_number, service_id, appointment_date, start_time },
+    body: { full_name, address, contact_number, service_id, appointment_date, start_time },
   })
 }

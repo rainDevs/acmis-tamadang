@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router'
 import { Clock, HeartPulse, MapPin, Menu, Phone, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,16 @@ const links = [
 
 export default function Header() {
   const [open, setOpen] = useState(false)
+
+  // Close the overlay menu on Escape from anywhere while it's open.
+  useEffect(() => {
+    if (!open) return
+    function onKey(e) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -83,8 +93,11 @@ export default function Header() {
       </div>
 
       {open ? (
-        <nav className="border-t px-4 py-3 md:hidden" aria-label="Mobile">
-          <ul className="space-y-1">
+        <nav
+          className="absolute inset-x-0 top-full z-50 border-b bg-background shadow-lg md:hidden"
+          aria-label="Mobile"
+        >
+          <ul className="max-h-[70svh] space-y-1 overflow-y-auto px-4 py-3">
             {links.map((l) => (
               <li key={l.to}>
                 <NavLink

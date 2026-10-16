@@ -1,14 +1,17 @@
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
+import Reveal from '@/components/shared/Reveal'
 
 export default function NotFoundPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16 text-center sm:px-6">
-      <h1 className="text-2xl font-bold">Page not found</h1>
-      <p className="mt-2 text-sm text-muted-foreground">The page you opened does not exist or was moved.</p>
-      <Button asChild className="mt-6">
-        <Link to="/">Go home</Link>
-      </Button>
+      <Reveal>
+        <h1 className="text-2xl font-bold">Page not found</h1>
+        <p className="mt-2 text-sm text-muted-foreground">The page you opened does not exist or was moved.</p>
+        <Button asChild className="mt-6">
+          <Link to="/">Go home</Link>
+        </Button>
+      </Reveal>
     </div>
   )
 }

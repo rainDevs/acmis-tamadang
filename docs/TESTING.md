@@ -24,7 +24,7 @@ Manual UI checks (required per task, `RULES.md §14`):
 - Syntax: `php -l <file>` per changed file — pass on all 7 new/changed PHP files (verified 2026-10-16).
 - CLI smoke tests from repo root: `php backend/tests/health_check.php` — 9/9 PASS, exit 0; `php backend/tests/db_connection_check.php` — 23/23 PASS, exit 0 (verified 2026-10-16).
 - Manifest: `composer validate` from `backend/` — valid (verified 2026-10-16).
-- Live check: `php -S localhost:8000 -t backend/public`, then `GET /api/health` → 200 + envelope, `GET /api/health/db` → 503 safe `Database unavailable.` (no MySQL here), unknown route → JSON 404 (all three verified live 2026-10-16, server log confirms 200/503/404).
+- Live check: `npm start` from `backend/` (or `php -S localhost:8000 -t backend/public` from repo root), then `GET /api/health` → 200 + envelope, `GET /api/health/db` → 503 safe `Database unavailable.` (no MySQL here), unknown route → JSON 404 (all three verified live 2026-10-16, server log confirms 200/503/404).
 - Outstanding: live 200 from `/api/health/db` against real MySQL (needs provisioned disposable DB).
 - Required per future change when endpoints exist: expected status codes + response shapes; invalid input, unauthenticated, and unauthorized requests; safe-error check (no SQL/stack/paths/secrets in responses).
 

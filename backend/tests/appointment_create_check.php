@@ -95,6 +95,7 @@ $yesterday = (new DateTimeImmutable('yesterday', $manila))->format('Y-m-d');
 $valid = static fn (string $date, string $time): array => [
     'full_name' => 'Test Resident 1',
     'contact_number' => '0917 000 0001',
+    'address' => 'Purok 1, Tamadang',
     'service_id' => '1',
     'appointment_date' => $date,
     'start_time' => $time,
@@ -109,7 +110,7 @@ $data = json_decode($res['body'], true)['data'];
 check('reference format + pending', (bool) preg_match('/^ACMIS-\d{4}-\d{6}$/', (string) ($data['reference_no'] ?? '')) && ($data['status'] ?? '') === 'pending');
 check('echoes slot fields', ($data['service_id'] ?? 0) === 1 && ($data['appointment_date'] ?? '') === $mon && ($data['start_time'] ?? '') === '08:00');
 $row = $pdo->query("SELECT * FROM appointments WHERE reference_no = " . $pdo->quote((string) $data['reference_no']))->fetch();
-check('row persisted with normalized contact', $row !== false && ($row['contact_number'] ?? '') === '09170000001' && ($row['requester_name'] ?? '') === 'Test Resident 1');
+check('row persisted with normalized contact', $row !== false && ($row['contact_number'] ?? '') === '09170000001' && ($row['requester_name'] ?? '') === 'Test Resident 1' && ($row['address'] ?? '') === 'Purok 1, Tamadang');
 
 // --- 2. Same slot twice → 409, single row. ---
 $second = $book($valid($mon, '08:00'));
@@ -131,6 +132,7 @@ $base = $valid($tue, '09:00');
 $cases = [
     'missing name' => array_merge($base, ['full_name' => '  ']),
     'missing contact' => array_merge($base, ['contact_number' => '']),
+    'missing address' => array_merge($base, ['address' => '  ']),
     'bad mobile short' => array_merge($base, ['contact_number' => '09170001']),
     'bad mobile landline' => array_merge($base, ['contact_number' => '028931234']),
     'unknown service' => array_merge($base, ['service_id' => '999']),
@@ -164,6 +166,7 @@ if ($dowToday <= 5) {
     $rFuture = AppointmentController::handle([
         'full_name' => 'Test Resident 9',
         'contact_number' => '09170000009',
+        'address' => 'Purok 9, Tamadang',
         'service_id' => '2',
         'appointment_date' => $todayStr,
         'start_time' => '08:00',

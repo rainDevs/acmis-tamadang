@@ -11,8 +11,6 @@ export default function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
-      {/* Scroll space so the fixed mobile CTA never covers footer content. */}
-      <div aria-hidden="true" className="h-[76px] shrink-0 md:hidden" />
       <StickyMobileCta />
     </div>
   )

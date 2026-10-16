@@ -3,7 +3,7 @@ import { Field, TextInput } from '@/components/ui/field'
 
 // Step 3: resident details. Validation lives in BookingFlow (validateDetails).
 
-export default function DetailsStep({ fullName, contactNumber, errors, onChange, onBack, onReview }) {
+export default function DetailsStep({ fullName, address, contactNumber, errors, onChange, onBack, onReview }) {
   return (
     <div>
       <div className="grid gap-3">
@@ -16,6 +16,24 @@ export default function DetailsStep({ fullName, contactNumber, errors, onChange,
             value={fullName}
             onChange={(e) => onChange('fullName', e.target.value)}
             invalid={Boolean(errors.fullName)}
+            required
+          />
+        </Field>
+        <Field
+          label="Address"
+          required
+          htmlFor="bk-address"
+          hint="Purok / street and barangay. Staff use this to verify your request."
+          error={errors.address}
+        >
+          <TextInput
+            id="bk-address"
+            name="address"
+            autoComplete="street-address"
+            placeholder="Purok 1, Tamadang"
+            value={address}
+            onChange={(e) => onChange('address', e.target.value)}
+            invalid={Boolean(errors.address)}
             required
           />
         </Field>

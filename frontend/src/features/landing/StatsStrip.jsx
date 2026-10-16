@@ -12,11 +12,11 @@ export default function StatsStrip({ serviceCount }) {
     <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {stats.map((s) => (
         <div key={s.label} className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm">
-          <span className="order-1 flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600/10 text-emerald-700 dark:text-emerald-300" aria-hidden="true">
+          <span className="order-1 flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
             <s.icon className="size-5" />
           </span>
           <dt className="order-3 text-xs leading-snug text-muted-foreground">{s.label}</dt>
-          <dd className="order-2 text-2xl font-extrabold text-slate-900 dark:text-white">{s.value}</dd>
+          <dd className="order-2 text-2xl font-extrabold text-foreground">{s.value}</dd>
         </div>
       ))}
     </dl>

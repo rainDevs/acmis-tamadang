@@ -1,14 +1,22 @@
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { CalendarPlus, Search } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 
 // Thumb-zone CTA bar: primary action in easy reach on phones.
-// Rendered on public pages only; hidden on md+ where header CTAs serve instead.
+// Rendered on public pages only; hidden on md+ where header CTAs serve instead,
+// and hidden entirely on the request/status pages where its buttons would
+// link to the page you're already on.
 export default function StickyMobileCta() {
   const reduce = useReducedMotion()
+  const { pathname } = useLocation()
+  if (pathname === '/request' || pathname === '/status') return null
   return (
-    <motion.nav
+    <>
+      {/* Scroll space so the fixed bar never covers footer content. Rendered
+          only when the bar itself renders. */}
+      <div aria-hidden="true" className="h-[76px] shrink-0 md:hidden" />
+      <motion.nav
       aria-label="Quick actions"
       className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -30,6 +38,7 @@ export default function StickyMobileCta() {
           </Link>
         </Button>
       </div>
-    </motion.nav>
+      </motion.nav>
+    </>
   )
 }
