@@ -25,12 +25,25 @@ if (is_file($autoload)) {
     require_once __DIR__ . '/../src/Modules/Appointments/SlotTakenException.php';
     require_once __DIR__ . '/../src/Modules/Appointments/AppointmentService.php';
     require_once __DIR__ . '/../src/Modules/Appointments/AppointmentController.php';
+    require_once __DIR__ . '/../src/Modules/Appointments/AppointmentAdminController.php';
+    require_once __DIR__ . '/../src/Modules/Appointments/AppointmentAdminService.php';
+    require_once __DIR__ . '/../src/Modules/Appointments/LookupController.php';
     require_once __DIR__ . '/../src/Modules/Services/ServicesController.php';
+    require_once __DIR__ . '/../src/Modules/Services/ServicesAdminService.php';
+    require_once __DIR__ . '/../src/Modules/Services/ServicesAdminController.php';
+    require_once __DIR__ . '/../src/Modules/Announcements/AnnouncementsController.php';
+    require_once __DIR__ . '/../src/Modules/Auth/AuthService.php';
+    require_once __DIR__ . '/../src/Modules/Auth/Session.php';
+    require_once __DIR__ . '/../src/Modules/Auth/RequireAuth.php';
+    require_once __DIR__ . '/../src/Modules/Auth/AccessPolicy.php';
+    require_once __DIR__ . '/../src/Modules/Auth/AuthController.php';
 }
 
+use App\Modules\Appointments\AppointmentAdminController;
 use App\Modules\Appointments\AppointmentController;
 use App\Modules\Availability\AvailabilityController;
 use App\Modules\Services\ServicesController;
+use App\Modules\Services\ServicesAdminController;
 use App\Config\Config;
 use App\Modules\Health\DbHealthController;
 use App\Modules\Health\HealthController;
@@ -58,11 +71,12 @@ $allowedOrigins = array_filter(array_map(
 ));
 if ($origin !== '' && in_array($origin, $allowedOrigins, true) && PHP_SAPI !== 'cli') {
     header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Credentials: true');
     header('Vary: Origin');
 }
 if ($method === 'OPTIONS') {
     if (PHP_SAPI !== 'cli') {
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
         header('Access-Control-Allow-Headers: Content-Type');
         header('Access-Control-Max-Age: 86400');
         http_response_code(204);
@@ -71,6 +85,102 @@ if ($method === 'OPTIONS') {
 }
 
 $key = $method . ' ' . $path;
+
+// Staff appointment detail + status routes carry a reference segment, so
+// they dispatch by prefix before the exact-match map below:
+//   GET   /api/appointments/{reference}          → detail
+//   PATCH /api/appointments/{reference}/status   → updateStatus
+if (($method === 'GET' || $method === 'PATCH') && str_starts_with($path . '/', '/api/appointments/')) {
+    $rest = substr($path, strlen('/api/appointments/'));
+    $segments = explode('/', $rest);
+    if (count($segments) === 1 && $segments[0] !== '') {
+        if ($method === 'GET') {
+            try {
+                $result = AppointmentAdminController::detail(urldecode($segments[0]));
+            } catch (Throwable $e) {
+                ApiError::log('request', $e);
+                $result = ApiError::serverError();
+            }
+            if (PHP_SAPI !== 'cli') {
+                http_response_code($result['status']);
+                header('Content-Type: application/json; charset=utf-8');
+            }
+            echo $result['body'];
+            return;
+        }
+    } elseif (count($segments) === 2 && $segments[0] !== '' && strtolower($segments[1]) === 'status' && $method === 'PATCH') {
+        try {
+            $result = AppointmentAdminController::updateStatus(null, urldecode($segments[0]));
+        } catch (Throwable $e) {
+            ApiError::log('request', $e);
+            $result = ApiError::serverError();
+        }
+        if (PHP_SAPI !== 'cli') {
+            http_response_code($result['status']);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo $result['body'];
+        return;
+    }
+}
+
+// Staff services-admin routes with an id segment (all admin+ via controller):
+//   PATCH  /api/services/{id}   → updateService
+//   PATCH  /api/schedules/{id}  → updateSchedule
+//   DELETE /api/closures/{id}   → deleteClosure
+if ($method === 'PATCH' && str_starts_with($path . '/', '/api/services/')) {
+    $id = urldecode(substr($path, strlen('/api/services/')));
+    if ($id !== '' && !str_contains($id, '/') && ctype_digit($id)) {
+        try {
+            $result = ServicesAdminController::updateService(null, (int) $id);
+        } catch (Throwable $e) {
+            ApiError::log('request', $e);
+            $result = ApiError::serverError();
+        }
+        if (PHP_SAPI !== 'cli') {
+            http_response_code($result['status']);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo $result['body'];
+        return;
+    }
+}
+
+if ($method === 'PATCH' && str_starts_with($path . '/', '/api/schedules/')) {
+    $id = urldecode(substr($path, strlen('/api/schedules/')));
+    if ($id !== '' && !str_contains($id, '/') && ctype_digit($id)) {
+        try {
+            $result = ServicesAdminController::updateSchedule(null, (int) $id);
+        } catch (Throwable $e) {
+            ApiError::log('request', $e);
+            $result = ApiError::serverError();
+        }
+        if (PHP_SAPI !== 'cli') {
+            http_response_code($result['status']);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo $result['body'];
+        return;
+    }
+}
+
+if ($method === 'DELETE' && str_starts_with($path . '/', '/api/closures/')) {
+    $id = urldecode(substr($path, strlen('/api/closures/')));
+    if ($id !== '' && !str_contains($id, '/') && ctype_digit($id)) {
+        try {
+            $result = ServicesAdminController::deleteClosure((int) $id);
+        } catch (Throwable $e) {
+            ApiError::log('request', $e);
+            $result = ApiError::serverError();
+        }
+        if (PHP_SAPI !== 'cli') {
+            http_response_code($result['status']);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo $result['body'];
+        return;
+    }
+}
 
 if ($method === 'GET' && $path === '/api/health') {
     $result = HealthController::check();

@@ -67,6 +67,24 @@ Entry format: Date | Decision | Rationale | Owner/Approver | Affected tasks.
 - Owner/Approver: Project owner (TASK-010 selected 2026-10-16)
 - Affected tasks: TASK-010 (Done); unblocks TASK-011/012
 
+## 2026-10-16 — Staff dashboard module map approved
+- Decision: Staff area is organized into six modules: Requests (live), Residents/Patients, Consultation, Services, Announcements, Users (all Coming-soon previews, non-navigating until built). Dashboard home at `/admin`; login lands there.
+- Rationale: Owner-defined IA; previews carry no fake navigation.
+- Owner/Approver: Project owner (requested 2026-10-16)
+- Affected tasks: TASK-017 (dashboard added); new backlog TASK-018…022
+
+## 2026-10-16 — TASK-013: staff authentication (roles stored, matrix deferred)
+- Decision: `password_hash()`/`password_verify()` + transparent rehash; `staff_users` (approved role names) + `staff_login_attempts` (5 fails → 5-min lock, DB-clock evaluated); fixation-safe native sessions (`ACMISSESSID`, HttpOnly, env-driven Secure/SameSite, 120-min idle); generic 401s (no enumeration); Origin check on auth POSTs; CSRF tokens deferred (same-origin + Lax posture documented). Dev admin `admin` provisioned on `acmistamadangdb` via `create_staff.php` (password reported to owner, rotatable by re-run). Staff UI converted from demo to live session.
+- Rationale: Secure staff access must precede admin features (Phase 3); permission enforcement stays in TASK-014.
+- Owner/Approver: Project owner (TASK-013 selected 2026-10-16)
+- Affected tasks: TASK-013 (Done); unblocks TASK-014/015
+
+## 2026-10-16 — TASK-017: staff screens as TEMPORARY-MOCK design-ahead
+- Decision: Staff login/queue/detail built against synthetic in-memory data with on-screen `TEMPORARY-MOCK` badges; demo session grants nothing real and resets on reload; `ProtectedRoute` shape is what TASK-013 will enforce for real. Endpoint needs (login/me, filtered paginated list, detail with history, status PATCH with transition rules + reason) recorded in `docs/API.md`.
+- Rationale: Screens must exist before auth/admin APIs so those APIs match real UI needs (frontend-first resequence).
+- Owner/Approver: Project owner (TASK-017 selected 2026-10-16)
+- Affected tasks: TASK-017 (Done); shapes TASK-013/014/015
+
 ## 2026-10-16 — Appointment address field approved (anti-prank verification)
 - Decision: Public booking collects `address` (required, ≤255 chars), persisted in `appointments.address`, so staff can verify whether a request is legitimate. No other new fields.
 - Rationale: Owner request — name + mobile alone can't distinguish real from prank requests.
@@ -89,6 +107,49 @@ Entry format: Date | Decision | Rationale | Owner/Approver | Affected tasks.
 - Rationale: Unblocks live migration + constraint verification (TASK-008 fully verified 2026-10-16) without touching any real data.
 - Owner/Approver: Project owner (credential authorized 2026-10-16 for local disposable-DB runs)
 - Affected tasks: TASK-008 (Done); all future migration tasks
+
+## 2026-10-16 — Superadmin dev account provisioned (hash-only, dev-only)
+- Decision: Owner-requested `superadmin` staff account (Super Admin, role `superadmin`, note `App Developer Account`) provisioned on dev DB `acmistamadangdb` via `backend/scripts/create_staff.php` (upsert, `password_hash()` only; secret never committed, never in `database/seeders/`). Script now loads `backend/.env` like the front controller. Credential is dev-only and rotatable by re-run; production passwords must be strong and unique.
+- Rationale: App-developer account needed for staff-area work; `staff_users` (not `users`) is the table; plaintext-in-seed is prohibited by `RULES.md` §8/§12.
+- Owner/Approver: Project owner (requested 2026-10-16)
+- Affected tasks: TASK-013 (provisioning noted); TASK-022 (user admin UI later)
+
+## 2026-10-16 — Request Review permission: approve/reject is admin-only
+- Decision: In Request Review, only `superadmin` and `admin` accounts may approve/reject a request; `staff` accounts view only. Encoded server-side in `RequireAuth::APPOINTMENT_REVIEW_ROLES` + `requireRoles()` (403 otherwise); review UI hides the action buttons for staff with a plain-language view-only note. First approved item of the Q-05 permission matrix — the matrix for other modules (patients, consultations, services, announcements, users) stays deferred.
+- Rationale: Owner-stated policy; fail-closed on both layers (unknown roles get view-only UI and 403 API).
+- Owner/Approver: Project owner (stated 2026-10-16)
+- Affected tasks: TASK-014 (partial rule recorded, still Blocked on remaining matrix); TASK-015 (PATCH endpoint must enforce via `requireRoles`); TASK-024 (implementation); TASK-022 (user admin later)
+
+## 2026-10-16 — TASK-020: services master-data admin (edit-only, closures CRUD)
+- Decision: Admin+ manages scheduling master data via 7 endpoints: services PATCH (description/duration/active — names stay the approved catalog), schedules PATCH (window/duration/capacity/active — structure fixed), closures GET/POST/DELETE (operational dates). No create/delete for services or schedule rows (no approved rule). Changes apply to future bookings only.
+- Rationale: Owner-requested module (matrix: admin+); edit-only bounds keep every approved Q-01/Q-02 value intact while allowing operational tuning.
+- Owner/Approver: Project owner (requested 2026-10-16)
+- Affected tasks: TASK-020 (Done)
+
+## 2026-10-16 — TASK-026: public lookup via reference + contact suffix
+- Decision: `POST /api/public/appointments/lookup` checks the reference plus the last-4 contact digits (timing-safe) and returns status + schedule only; wrong/unknown/malformed inputs share one identical 404. POST keeps both values out of URLs and access logs.
+- Rationale: Owner-requested full mock removal; the reference+suffix check was already the approved verification approach (`docs/API.md`).
+- Owner/Approver: Project owner (requested 2026-10-16)
+- Affected tasks: TASK-026 (Done); TASK-027 (mock deletion next)
+
+## 2026-10-16 — Q-05 permission matrix approved (complete)- Decision: Full per-module matrix (owner-approved 2026-10-16). Requests review: superadmin/admin approve-reject, staff view-only (already in effect). Patients records: all roles (create/search/update). Consultations: all roles (create/view). Services/schedules/closures admin: superadmin/admin only. Announcements publishing: superadmin/admin only. Staff accounts/roles admin: superadmin/admin only. Reports/exports: all roles.
+- Rationale: Owner answers to the TASK-001 Q-05 interview; least-privilege split between operational (all roles) and administrative (admin+) functions.
+- Owner/Approver: Project owner (answered 2026-10-16)
+- Affected tasks: TASK-001 (Q-05 now answered); TASK-014 (unblocked — matrix to enforce); TASK-018/019 (patients/consultations: all roles); TASK-020 (services admin: admin+); TASK-021 (publisher authority decided — admin+); TASK-022 (users admin: admin+)
+- Note (owner, 2026-10-16): this matrix is the DEFAULT RBAC matrix. A granular permission management layer (per-user overrides) will be implemented later and takes precedence over these defaults; until then every endpoint enforces the defaults below.
+- Enforced 2026-10-16 (TASK-014 Done): central `AccessPolicy` module map + `requireModule()`; PATCH status reuses the `appointments.review` entry; CLI 48/48 + regression suites green.
+
+## 2026-10-16 — TASK-025: announcements board served from MySQL
+- Decision: `announcements` table + seeder hold the same 4 board rows (no new copy invented); public `GET /api/public/announcements` serves them pinned-first; board UI reads live. No admin columns or CRUD — publishing workflow stays in blocked TASK-021. Dev DB `acmistamadangdb` migrated + seeded.
+- Rationale: Owner-requested full mock removal, announcements first; reference rows must live in the DB to keep the board working.
+- Owner/Approver: Project owner (requested 2026-10-16)
+- Affected tasks: TASK-025 (Done); TASK-021 (still Blocked); TASK-027 (mock deletion later)
+
+## 2026-10-16 — TASK-023: auth-only gate now, role matrix later
+- Decision: Ship `RequireAuth::check()` (authenticated-staff-only, fixed 401) as the single enforcement point for future staff endpoints; per-role distinctions stay deferred with TASK-014 (Q-05 matrix explicitly deferred by owner — no policy invented).
+- Rationale: Mechanism without policy: guests are denied today, roles get gated once the approved matrix exists. Deactivation-timing limitation documented in code.
+- Owner/Approver: Project owner (scope selected 2026-10-16: auth-only foundation)
+- Affected tasks: TASK-023 (Done); TASK-014 (still Blocked on Q-05); TASK-015 (wiring unblocked)
 
 ---
 ## Related notes

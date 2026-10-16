@@ -71,7 +71,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-white/10">
         <p className="mx-auto max-w-6xl px-4 py-4 text-xs leading-relaxed text-slate-500 sm:px-6">
-          ACMIS demo frontend with mock data. Personal and health information is handled under the Data Privacy Act of 2012.
+          ACMIS staff and resident portal. Personal and health information is handled under the Data Privacy Act of 2012.
         </p>
       </div>
     </footer>

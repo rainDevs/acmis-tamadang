@@ -1,10 +1,10 @@
 # ACMIS Architecture
 
-Status: Baseline 2026-10-15. Frontend mock-only; backend and database tiers have folder skeletons with zero code files. See `docs/DECISIONS.md` (2026-10-15 3-tier layout) for the authoritative root layout: `backend/`, `database/`, `docs/`, `frontend/`.
+Status: Live slices through TASK-027 (2026-10-16). No mock data remains in the UI: public booking, announcements, status lookup, staff auth, and appointment administration all run `Browser → React Frontend → PHP REST API → MySQL`. See `docs/DECISIONS.md` (2026-10-15 3-tier layout) for the authoritative root layout: `backend/`, `database/`, `docs/`, `frontend/`.
 
 ## Data flow
 
-Implemented today: `Browser → React mock (no network backend)`.
+Implemented today: `Browser → React Frontend → PHP REST API → MySQL` (13 live endpoints; full list below).
 
 Planned (per `DEVELOPMENT_PLAN.md §3` / `RULES.md §4`):
 
@@ -23,6 +23,8 @@ Rules (mandatory):
 
 `features/appointments/BookingFlow.jsx` (service → schedule → details → review → confirmation) with `ServiceStep`, `ScheduleStep` (date chips + slot grid), `DetailsStep` (client checks mirror server), `ReviewDialog` (Radix `Modal`, double-submit guard), `ConfirmationView` (selectable/copyable reference, pending notice). `RequestPage.jsx` rewritten (urgent-care + privacy notes per brand). `services/api.js`: `getServices`, `getAvailabilitySummary`, `submitAppointment` are live via `request()`; `lookupAppointment` + announcements stay mock (no backend yet).
 
+Staff screens (TASK-017 screens, TASK-015 live): `features/staff/` (live session, `AppointmentList` with server filters/pagination/counts, `AppointmentDetail` with server record + PATCH status flow, `reviewMeta.js` button constants); `pages/admin/` (login, queue, detail, dashboard with live counts); `StaffLayout` header (logo + avatar menu: Profile dialog, theme toggle, sign out) + desktop sidebar / mobile drawer reuse of `StaffSidebar` (live pending badge). Endpoint needs for TASK-013/014/015 documented in `docs/API.md`.
+
 Observed `frontend/src/` on 2026-10-15 (foundation in TASK-016):
 - `App.jsx`, `main.jsx`, `index.css`
 - `routes/index.jsx`: `/`, `/request`, `/status`, `/admin/login` (placeholder), `*` → NotFound, all under `layouts/PublicLayout.jsx`
@@ -39,7 +41,7 @@ Build: Vite 8 + React 19 + Tailwind v4 (`frontend/package.json`, `vite.config.js
 
 Design foundation (TASK-016, 2026-10-16): theme tokens brand-aligned in `index.css` (`--primary`/`--ring` emerald, `--accent` cyan tint, both modes — no `bg-emerald-*` one-offs remain outside status colors); `Button lg` = 44px touch target; shared patterns `ui/field.jsx` (`Field`/`TextInput`/`FormError` with `role="alert"`), `shared/LoadingState.jsx`, `shared/EmptyState.jsx`, `ui/dialog.jsx` (Radix bottom-sheet → centered card); `layouts/StaffLayout.jsx` minimal shell (nav lands in TASK-017); `services/api.js` gained a live `request()` helper (mock exports unchanged — cutover is TASK-011's job). `StatusLookupForm` dogfoods the new patterns.
 
-## Backend — Implemented skeleton + health + DB connection + availability + booking (16 files, 2026-10-16)
+## Backend — Implemented skeleton + health + DB connection + availability + booking + auth (20 files, 2026-10-16)
 
 Observed `backend/` on 2026-10-16:
 - `composer.json` (package `acmis/backend`, php >=8.1, PSR-4 `App\` → `src/`, zero dependencies; `composer validate` clean)
@@ -55,11 +57,23 @@ Observed `backend/` on 2026-10-16:
 - `src/Modules/Availability/AvailabilityController.php` (`GET /api/public/availability`; param validation → 422; DB failure → 503)
 - `src/Modules/Appointments/AppointmentService.php` (transactional booking: `FOR UPDATE` capacity check + insert, `pending`, collision-retried reference)
 - `src/Modules/Appointments/AppointmentController.php` (`POST /api/public/appointments`; JSON validation → 422; taken slot → 409)
+- `src/Modules/Announcements/AnnouncementsController.php` (TASK-025 public board: pinned-first list, `LIMIT 50`, `posted_at` exposed as `date`)
+- `src/Modules/Auth/AuthService.php` (verify + rehash + throttling; lock evaluated on DB clock)
+- `src/Modules/Auth/AuthController.php` (`POST login/logout`, `GET me`; Origin check on POSTs)
+- `src/Modules/Auth/Session.php` (fixation-safe sessions, idle timeout, destroy)
+- `src/Modules/Auth/RequireAuth.php` (TASK-023 auth-only gate: session check → user or fixed 401; no role checks — matrix deferred to TASK-014)
+- `src/Modules/Auth/AccessPolicy.php` (TASK-014 default RBAC: module map + `requireModule()`; granular overrides explicitly future)
+- `src/Modules/Appointments/AppointmentAdminService.php` (TASK-015 transitions/counts/history queries) + `AppointmentAdminController.php` (401/403/404/422 staff endpoints) + `LookupController.php` (TASK-026 public lookup, timing-safe suffix, identical 404s)
+- `tests/appointments_admin_check.php` (TASK-015 CLI test, 28 checks on disposable DB, exit 0)
+- `tests/lookup_check.php` (TASK-026 CLI test, 11 checks on disposable DB, exit 0)
+- `src/Modules/Services/ServicesAdminService.php` + `ServicesAdminController.php` (TASK-020 edit-only master-data admin, closures CRUD)
+- `tests/services_admin_check.php` (TASK-020 CLI test, 32 checks on disposable DB, exit 0)
+- `scripts/create_staff.php` (local account upsert; 10+ char passwords; secrets never committed)
 - `src/Modules/Appointments/SlotTakenException.php` (taken-slot signal → 409)
-- `tests/health_check.php` (CLI smoke test, 9 checks, exit 0), `tests/db_connection_check.php` (CLI test, 23 checks, exit 0), `tests/availability_check.php` (CLI test, 24 checks on disposable DB, exit 0), `tests/appointment_create_check.php` (CLI test, 27 checks on disposable DB, exit 0)
+- `tests/health_check.php` (CLI smoke test, 9 checks, exit 0), `tests/db_connection_check.php` (CLI test, 23 checks, exit 0), `tests/availability_check.php` (CLI test, 24 checks on disposable DB, exit 0), `tests/appointment_create_check.php` (CLI test, 28 checks on disposable DB, exit 0), `tests/auth_check.php` (CLI test, 13 checks on disposable DB, exit 0), `tests/services_check.php` (CLI test, 7 checks, exit 0)
 - Empty dirs (Planned use): `src/Middleware/`, `storage/logs/`
 
-Implemented endpoints: `GET /api/health` (200), `GET /api/health/db` (200/503), `GET /api/public/availability` (200/422/503), `POST /api/public/appointments` (201/409/422/503) + safe JSON 404/500; see `docs/API.md`. No auth, lookup, status workflow, or UI wiring.
+Implemented endpoints: `GET /api/health` (200), `GET /api/health/db` (200/503), `GET /api/public/availability` (200/422/503), `POST /api/public/appointments` (201/409/422/503), `POST /api/auth/login` (200/401/429/403), `POST /api/auth/logout` (200), `GET /api/auth/me` (200/401), `GET /api/public/services` (200), `GET /api/public/announcements` (200), `GET /api/appointments` (200/401/422), `GET /api/appointments/{ref}` (200/401/404), `PATCH /api/appointments/{ref}/status` (200/401/403/404/422), `POST /api/public/appointments/lookup` (200/404/422), `GET /api/services` + `PATCH /api/services/{id}` + `GET /api/schedules` + `PATCH /api/schedules/{id}` + `GET/POST /api/closures` + `DELETE /api/closures/{id}` (200/201/401/403/404/409/422) + safe JSON 404/500; see `docs/API.md`. All frontend reads are live.
 
 ## Database tier
 

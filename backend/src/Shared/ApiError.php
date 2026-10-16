@@ -53,6 +53,17 @@ final class ApiError
     }
 
     /**
+     * Public lookup miss: fixed safe message shared by wrong-suffix,
+     * unknown-reference, and malformed-reference cases alike, so callers
+     * cannot distinguish which part failed.
+     * @return array{status: int, body: string}
+     */
+    public static function lookupMiss(): array
+    {
+        return self::fail('No matching request found. Check your reference and verification.', 404);
+    }
+
+    /**
      * @return array{status: int, body: string}
      */
     public static function notFound(): array

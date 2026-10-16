@@ -1,27 +1,25 @@
-// API client — live PHP backend with mock fallback only where no endpoint
-// exists yet (announcements board, status lookup). Envelope everywhere:
+// API client — live PHP backend (TASK-026 completed the cutover; no mock
+// functions remain). Envelope everywhere:
 // { success, message, data }; thrown Error carries .status + .payload.
 //
 // Live mapping:
 //   getServices()            -> GET /api/public/services
 //   getAvailabilitySummary() -> GET /api/public/availability
 //   submitAppointment()      -> POST /api/public/appointments
-//   lookupAppointment()      -> mock (no public lookup endpoint yet)
+//   getAnnouncements()       -> GET /api/public/announcements
+//   lookupAppointment()      -> POST /api/public/appointments/lookup
 
-import { mockAnnouncements, mockAppointments } from './mockData'
-
-const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
-
-// Live backend cutover point (TASK-016). Mock functions below stay as-is until
-// TASK-011 switches each one to request(). Error shape stays mock-compatible:
-// thrown Error with .status and .payload = { success: false, message, data }.
+// Live backend cutover point (TASK-016). All functions below go through
+// request(). Error shape: thrown Error with .status and
+// .payload = { success: false, message, data }.
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
-export async function request(path, { method = 'GET', body } = {}) {
+export async function request(path, { method = 'GET', body, credentials } = {}) {
   let res
   try {
     res = await fetch(`${API_BASE}${path}`, {
       method,
+      credentials,
       headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
@@ -48,17 +46,6 @@ export async function request(path, { method = 'GET', body } = {}) {
   return payload
 }
 
-function ok(message, data) {
-  return { success: true, message, data }
-}
-
-function fail(message, data = null, status = 400) {
-  const err = new Error(message)
-  err.status = status
-  err.payload = { success: false, message, data }
-  throw err
-}
-
 export async function getServices() {
   return request('/api/public/services')
 }
@@ -73,29 +60,101 @@ export async function getAvailabilitySummary({ serviceId, from, to } = {}) {
 }
 
 export async function getAnnouncements() {
-  await delay(250)
-  const sorted = [...mockAnnouncements].sort(
-    (a, b) => Number(b.pinned) - Number(a.pinned) || b.date.localeCompare(a.date),
-  )
-  return ok('Announcements retrieved.', sorted)
+  return request('/api/public/announcements')
 }
 
-// Public lookup MUST stay minimal: status + schedule only. No clinical data.
-// Requires reference_no + contact suffix verification (mock of approved verification step).
-export async function lookupAppointment(referenceNo, contactSuffix) {
-  await delay(400)
-  const ref = String(referenceNo || '').trim().toUpperCase()
-  const suffix = String(contactSuffix || '').trim()
+// Staff session calls. Cookie-based; credentials:'include' so the browser
+// sends the session cookie cross-origin in dev (Vite :5173 → API :8000).
+// Wired live in TASK-013.
+export async function staffLogin(username, password) {
+  return request('/api/auth/login', { method: 'POST', body: { username, password }, credentials: 'include' })
+}
 
-  if (!ref || !suffix) {
-    return fail('Reference number and contact verification are required.', null, 422)
-  }
-  const record = mockAppointments[ref]
-  if (!record || record.contact_suffix !== suffix) {
-    return fail('No matching request found. Check your reference and verification.', null, 404)
-  }
-  const { contact_suffix: _hidden, ...publicSafe } = record
-  return ok('Appointment status retrieved.', publicSafe)
+export async function staffLogout() {
+  return request('/api/auth/logout', { method: 'POST', credentials: 'include' })
+}
+
+export async function staffMe() {
+  return request('/api/auth/me', { credentials: 'include' })
+}
+
+// Staff appointment administration (TASK-015, live). Cookie session required;
+// guests get 401, staff role gets 403 on status changes.
+export async function staffAppointmentList({ status, serviceId, dateFrom, dateTo, q, page, perPage } = {}) {
+  const params = new URLSearchParams()
+  if (status !== undefined && status !== '') params.set('status', String(status))
+  if (serviceId !== undefined && serviceId !== '') params.set('service_id', String(serviceId))
+  if (dateFrom) params.set('date_from', dateFrom)
+  if (dateTo) params.set('date_to', dateTo)
+  if (q !== undefined && q !== '') params.set('q', String(q))
+  if (page !== undefined) params.set('page', String(page))
+  if (perPage !== undefined) params.set('per_page', String(perPage))
+  const query = params.toString()
+  return request(`/api/appointments${query ? `?${query}` : ''}`, { credentials: 'include' })
+}
+
+export async function staffAppointmentDetail(referenceNo) {
+  return request(`/api/appointments/${encodeURIComponent(String(referenceNo || '').trim())}`, { credentials: 'include' })
+}
+
+export async function staffUpdateStatus(referenceNo, { status, reason } = {}) {
+  return request(`/api/appointments/${encodeURIComponent(String(referenceNo || '').trim())}/status`, {
+    method: 'PATCH',
+    body: { status, reason },
+    credentials: 'include',
+  })
+}
+
+// Scheduling master-data administration (TASK-020, admin+ only).
+export async function adminServicesList() {
+  return request('/api/services', { credentials: 'include' })
+}
+
+export async function adminUpdateService(id, fields) {
+  return request(`/api/services/${encodeURIComponent(String(id))}`, {
+    method: 'PATCH',
+    body: fields,
+    credentials: 'include',
+  })
+}
+
+export async function adminSchedulesList() {
+  return request('/api/schedules', { credentials: 'include' })
+}
+
+export async function adminUpdateSchedule(id, fields) {
+  return request(`/api/schedules/${encodeURIComponent(String(id))}`, {
+    method: 'PATCH',
+    body: fields,
+    credentials: 'include',
+  })
+}
+
+export async function adminClosuresList() {
+  return request('/api/closures', { credentials: 'include' })
+}
+
+export async function adminAddClosure({ closure_date, reason }) {
+  return request('/api/closures', {
+    method: 'POST',
+    body: { closure_date, reason },
+    credentials: 'include',
+  })
+}
+
+export async function adminDeleteClosure(id) {
+  return request(`/api/closures/${encodeURIComponent(String(id))}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+}
+// Public status lookup (TASK-026, live). Reference + contact suffix are POSTed
+// (never in URLs) and the response stays minimal: status + schedule only.
+export async function lookupAppointment(referenceNo, contactSuffix) {
+  return request('/api/public/appointments/lookup', {
+    method: 'POST',
+    body: { reference_no: referenceNo, contact_suffix: contactSuffix },
+  })
 }
 
 // Live submission. Canonical payload uses API field names; the booking flow

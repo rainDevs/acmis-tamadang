@@ -326,7 +326,7 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - Security/privacy considerations:
 - [ ] Questionnaire and answers must contain no real patient data — service names and role titles only; sample records, if any, strictly synthetic
 - Notes/decisions:
-- [ ] Round 1 answers recorded in `docs/DECISIONS.md` 2026-10-16: Q-01 [x] 6 services; Q-02 [x] Mon–Fri 8:00am–5:00pm, 30-min, 1/slot, 18 slots/day (follow-up confirmed); Q-03 [x] always staff-approved; Q-04 [x] check-at-visit procedure, no system dedup; Q-05 [~] role names only, permission matrix deferred; Q-06 [~] field structure transcribed (labels only), correction policy OPEN; Q-07 [~] privacy draft PROPOSED, approval pending; Q-08/09/10 [ ] unknown
+- [ ] Round 1 answers recorded in `docs/DECISIONS.md` 2026-10-16: Q-01 [x] 6 services; Q-02 [x] Mon–Fri 8:00am–5:00pm, 30-min, 1/slot, 18 slots/day (follow-up confirmed); Q-03 [x] always staff-approved; Q-04 [x] check-at-visit procedure, no system dedup; Q-05 [x] full matrix approved 2026-10-16 (requests: admin+ approve, staff view; patients/consultations/reports: all roles; services/announcements/users: admin+); Q-06 [~] field structure transcribed (labels only), correction policy OPEN; Q-07 [~] privacy draft PROPOSED, approval pending; Q-08/09/10 [ ] unknown
 - [ ] Privacy source-photo warning: owner-provided form photo contains real patient identifiers — never commit; delete from Temp after use
 - Open questions (from DEVELOPMENT_PLAN.md §16; do NOT invent answers):
 - [ ] Q-01 Services: Which appointment services are offered? (exact names for `appointment_services`)
@@ -493,7 +493,7 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - [x] Post-acceptance polish 2026-10-16 (animation): `StepPanel` in `BookingFlow.jsx` — subtle step transition (`AnimatePresence mode="wait"`, opacity + 16px x, 0.25s easeOut, no entrance on page load) + focus moves to an sr-only step heading on every step change (skipped on mount); reduced-motion users get an instant swap. Verified: `npm run build` exit 0, `npm run lint` exit 0 (pre-existing warning only). Real click-through still belongs to TASK-012.
 
 ## TASK-017: Staff screens (login + appointment list/detail, mock-backed)
-- Status: Backlog
+- Status: Done
 - Phase: Phase 3 — Staff authentication and permissions (design-ahead)
 - Goal: Design staff login + appointment list/detail screens against Planned `DEVELOPMENT_PLAN.md §9` contracts using clearly-labeled temporary mock states, so TASK-013/014/015 APIs are shaped by real UI needs.
 - Dependencies: TASK-016 (foundation)
@@ -513,10 +513,272 @@ Detailed for Phase 0 below (TASK-002…006). TASK-007…015 remain one-liners un
 - [ ] Synthetic data only; no real credentials in mock login; protected-route scaffolding blocks nothing real yet (documented as non-enforcing until TASK-013)
 - Notes/decisions:
 - [ ] Design-ahead per frontend-first resequence; wiring lands with TASK-013/014/015
-- TASK-012: Verify public booking end to end (depends TASK-010, TASK-011)
-- TASK-013: Staff authentication + session security (depends TASK-007)
-- TASK-014: Staff authorization policies (depends TASK-013)
-- TASK-015: Appointment administration (depends TASK-012, TASK-014)
+- [ ] Built 2026-10-16: demo session (in-memory, resets on reload), 8-row synthetic dataset across all 6 statuses, filter/search/pagination + detail timeline + confirm-dialog actions (reason required for reject/cancel), `TEMPORARY-MOCK` badges in code + UI, endpoint needs in `docs/API.md`
+- [ ] Mobile nav polish 2026-10-16 (owner-requested): `StaffLayout` header keeps logo + avatar only (Dashboard/Requests header buttons removed); mobile (`md:hidden`) hamburger opens a modal drawer reusing `StaffSidebar` (overlay + Escape + focus-return, body scroll lock); avatar dropdown holds Profile dialog (live session user only, no edit), theme toggle, sign out. Verified: `npm run build` exit 0, `npm run lint` exit 0 (pre-existing warning only).
+## TASK-012: Verify public booking end to end
+- Status: Done
+- Phase: Phase 2 — Public appointment request vertical slice
+- Goal: Prove the resident slice works against live MySQL on a fresh disposable database: services → availability → booking → persisted `pending` row, plus taken-slot 409, invalid-input 422s, and safe-error behavior. No code changes expected; fix nothing unless the slice is red (report only).
+- Dependencies: TASK-010 (Done), TASK-011 (Done)
+- Scope: Fresh disposable DB from all committed migrations + both seeders in filename order; live `php -S` HTTP checks for 200/201/409/422 bodies; direct row verification (status `pending`, address persisted); frontend `npm run build` + `npm run lint`; drop the disposable DB afterwards.
+- Out of scope: Staff review/approval (no TASK-015 endpoints yet — full plan §13 E2E up to approval stays outstanding); any backend/frontend edit; touching dev (`acmistamadangdb`) or other pre-existing databases.
+- Expected files/modules:
+- `database/migrations/*.sql` (applied, not edited)
+- `database/seeders/*.sql` (applied, not edited)
+- Acceptance criteria:
+- [ ] Fresh disposable DB builds from committed files only (8 migrations + 2 seeders, exit 0)
+- [ ] Valid booking returns 201 with `ACMIS-YYYY-XXXXXX` + `pending` and persists all submitted fields
+- [ ] Same-slot repeat returns 409; invalid inputs return 422; DB row + re-queried availability agree; error bodies leak nothing
+- [ ] `npm run build` + `npm run lint` exit 0; disposable DB dropped afterwards; no other database touched
+- Verification commands/tests:
+- [ ] `npm run build` + `npm run lint` from `frontend/`, exit codes recorded
+- [ ] Disposable DB create → apply migrations + seeders → `SHOW TABLES` / row counts
+- [ ] Live `GET /api/public/services` 200 (6 approved rows) → `GET /api/public/availability` 200 (18 slots) → `POST /api/public/appointments` 201 (`pending` reference) → availability re-query reflects the booking → repeat POST 409 → bad-mobile/inactive-service 422s → row check → drop DB
+- Security/privacy considerations:
+- [ ] Only disposable `acmis_*` databases created/touched/dropped; synthetic requester data only (`09…` test number); dev credentials never printed or committed; error bodies scanned for SQL/stack/path leaks
+- Notes/decisions:
+- [ ] Staff-side approval flow is out of scope until TASK-015 lands; this task verifies the public slice only.
+- [x] Verified 2026-10-16 on fresh disposable `acmis_e2e12` (dropped after): 8 migrations + 2 seeders exit 0 (6 tables, 6 services, 5 schedules, 0 appointments); live `php -S localhost:8002` — services 200 (6 rows), availability 200 (Mon 2026-10-19, 18 slots/18 left), POST 201 `ACMIS-2026-349037` pending, re-query 17 left with 09:00 booked, repeat 409, bad-mobile/bad-service 422s, unknown-route 404; row check confirms exactly 1 persisted row with all fields + single occupying slot row; error-body leak scan CLEAN; server log confirms 200/200/201/200/409/422s/404. `npm run build` exit 0, `npm run lint` exit 0 (1 pre-existing warning). No other database touched.
+- TASK-018: Residents/Patients Management UI + API (depends TASK-013; check-at-visit procedure per Q-04; BLOCKED on patient-field confirmation — no approved field list yet)
+- TASK-019: Consultation Management UI + API (BLOCKED on Q-06 correction policy)
+## TASK-020: Services Management UI + API (scheduling master data, admin+ only)
+- Status: Done
+- Phase: Phase 7 — Dashboard, reports, and administration
+- Goal: Let superadmin/admin manage the scheduling master data from the staff area: edit services (description/duration/active — names stay the approved Q-01 catalog), edit schedule-template rows (window/duration/capacity/active — structure stays the approved Q-02 template), and add/remove holiday closures. Staff role sees no Services module (matrix: admin+).
+- Dependencies: TASK-014 (Done)
+- Scope: `ServicesAdminService` + `ServicesAdminController` (GET/PATCH services, GET/PATCH schedules, GET/POST/DELETE closures; all `AccessPolicy('services')`); prefix-route dispatch for PATCH/DELETE; CLI test `backend/tests/services_admin_check.php`; `api.js` admin functions; new `ServicesPage.jsx` + `/admin/services` route; sidebar Services link live for admin+ (hidden for staff).
+- Out of scope: Creating/deleting services or schedule rows (no approved rule — catalog and template structure stay fixed); reschedule of existing bookings; patient/consultation/user modules.
+- Expected files/modules:
+- `backend/src/Modules/Services/ServicesAdminService.php`
+- `backend/src/Modules/Services/ServicesAdminController.php`
+- `backend/src/Routes/api.php`
+- `backend/public/index.php` (prefix dispatch)
+- `backend/tests/services_admin_check.php`
+- `frontend/src/services/api.js`
+- `frontend/src/pages/admin/ServicesPage.jsx` (new)
+- `frontend/src/routes/index.jsx`
+- `frontend/src/components/layout/StaffSidebar.jsx`
+- Acceptance criteria:
+- [ ] Guests 401 / staff 403 on all seven endpoints; admin full access
+- [ ] Service names immutable (attempt → 422); durations 5–480, windows end>start, capacity 1–50, dates valid; duplicate closure date → 409; unknown ids → 404
+- [ ] Admin UI edits services/schedules/closures live with loading/error/success states; staff role sees no Services entry
+- [ ] `php -l` clean; CLI test exits 0; live cookiejar flow verified; disposable DB dropped; no schema change (existing tables only)
+- Verification commands/tests:
+- [ ] `php -l` per file; `php backend/tests/services_admin_check.php` (transient dev-DB env); live `php -S` + curl cookiejar (login → CRUD flow → logout); `npm run build` + `npm run lint`
+- Security/privacy considerations:
+- [ ] `AccessPolicy('services')` on every endpoint; prepared statements; safe envelopes; no patient data in this module; transient credentials only
+- Notes/decisions:
+- [x] Verified 2026-10-16: `php -l` clean; CLI 32/32 PASS on disposable DB (dropped); live cookiejar flow on disposable DB (dropped) — login 200 → services 200 (6) → PATCH service 200 → schedules 200 (5) → POST closure 201 → duplicate 409 → DELETE 200 → guest 401 → logout 200 → 401 (server log confirms all codes); `npm run build` + `npm run lint` exit 0. Debugging: (1) test provision omitted staff migrations → surfaced via `auto_prepend_file` shutdown handler (TESTING.md lesson now covers this explicitly); (2) cross-module `AppointmentAdminService` needed a `use` import under the `Services` namespace. No schema change (existing tables only); dev DB untouched.
+- TASK-021: Announcement Management UI + API (publishing authority decided 2026-10-16: admin+; workflow design still needed)
+- TASK-022: User Management UI + API — staff accounts/roles admin (depends TASK-014; admin+ per approved matrix)
+## TASK-013: Staff authentication + session security
+- Status: Done
+- Phase: Phase 3 — Staff authentication and permissions
+- Goal: Real username/password login with hardened PHP sessions (fixation-safe, idle timeout, throttling, generic errors) + live-wired staff login UI. No authorization policies yet (TASK-014).
+- Dependencies: TASK-007 (Done)
+- Scope: Migrations `staff_users` + `staff_login_attempts`; `backend/scripts/create_staff.php` (local upsert, never committed secrets); `Modules/Auth/` (`AuthService`, `AuthController`, `Session`); routes login/logout/me; CORS credentials for whitelisted origins; session cookie via env (`SESSION_SAMESITE`, `SESSION_SECURE`); Origin check on auth POSTs; CLI test `tests/auth_check.php`; frontend live session (`session.jsx`, login form, `request()` credentials); dev admin account on `acmistamadangdb` (owner-rotatable).
+- Out of scope: Role/permission enforcement (TASK-014), appointment admin wiring (TASK-015), password reset flow, CSRF tokens (SameSite=strict-by-default posture + Origin check documented; token flow deferred with rationale), `audit_logs` table (server-log auth events for now).
+- Expected files/modules:
+- `database/migrations/20261016000006_create_staff_users.sql`
+- `database/migrations/20261016000007_create_staff_login_attempts.sql`
+- `backend/scripts/create_staff.php`
+- `backend/src/Modules/Auth/AuthService.php`
+- `backend/src/Modules/Auth/AuthController.php`
+- `backend/src/Modules/Auth/Session.php`
+- `backend/src/Routes/api.php`
+- `backend/public/index.php` (CORS credentials)
+- `backend/tests/auth_check.php`
+- `frontend/src/services/api.js` (credentials passthrough)
+- `frontend/src/features/staff/session.jsx` (live session; demo appointments stay until TASK-015)
+- `frontend/src/features/staff/StaffLoginForm.jsx` (live; demo notice removed)
+- Acceptance criteria:
+- [ ] `password_hash()`/`password_verify()` only; hash never leaves server; locked-out (5 fails → 5 min, 429) and unknown-user both yield generic messages (no enumeration)
+- [ ] Login regenerates session id; logout destroys + clears cookie; `me` reflects live session; idle >120 min forces re-login
+- [ ] Live curl with cookiejar: login 200 → me 200 → logout → me 401; bad creds 401; 6th rapid fail 429; spoofed Origin on login → 403
+- [ ] Staff UI signs in/out for real against dev DB; protected routes still redirect when logged out
+- [ ] `php -l` clean; CLI test exits 0; frontend build/lint clean; no secrets committed
+- Verification commands/tests:
+- [ ] `php -l` per file; `php backend/tests/auth_check.php` (transient dev-DB env); live `php -S` + curl cookiejar sequence; frontend build/lint
+- Security/privacy considerations:
+- [ ] HttpOnly always; Secure/SameSite via env (dev `None`+Secure for Vite cross-origin; prod same-origin `Lax`); no passwords/tokens in logs (usernames only); dev admin password reported once + rotatable via script
+- Notes/decisions:
+- [ ] Roles stored as approved names (`superadmin|admin|staff`); permission matrix still deferred (TASK-014)
+- [ ] 2026-10-16 first matrix item approved (Request Review: superadmin/admin approve-reject, staff view-only — DECISIONS.md); encoded in `RequireAuth::APPOINTMENT_REVIEW_ROLES` + role-aware review UI (TASK-024 Done); remaining modules still Blocked on Q-05.
+- [ ] 2026-10-16 superadmin dev account provisioned on `acmistamadangdb` via `create_staff.php` (owner-requested: Super Admin / superadmin role / App Developer Account note); hash-only storage, secret never committed; script now loads `backend/.env`. Verified 11/11 (fields + password_verify + AuthService login, no hash leak).
+## TASK-023: Staff auth enforcement foundation (no role matrix)
+- Status: Done
+- Phase: Phase 3 — Staff authentication and permissions
+- Goal: One reusable server-side gate (`RequireAuth::check()`) that future staff endpoints call first: signed-in session passes, guests get the fixed 401. No role distinctions — the Q-05 permission matrix stays deferred in TASK-014.
+- Dependencies: TASK-013 (Done)
+- Scope: `backend/src/Modules/Auth/RequireAuth.php` + CLI test `backend/tests/require_auth_check.php` (session-only, no DB). Document the deactivation-timing limitation in code.
+- Out of scope: Role/permission enforcement (TASK-014, still Blocked on Q-05); any new endpoint or route; schema changes; frontend changes.
+- Expected files/modules:
+- `backend/src/Modules/Auth/RequireAuth.php`
+- `backend/tests/require_auth_check.php`
+- Acceptance criteria:
+- [ ] Guest (no/expired/destroyed session) → 401 `Authentication required.` with no internals leaked
+- [ ] Signed-in session → `['user' => { id, username, display_name, role }]` with no hash
+- [ ] `php -l` clean; CLI test exits 0; live guest `GET /api/auth/me` → 401 + `/api/health` → 200 (server log confirms)
+- Verification commands/tests:
+- [ ] `php -l backend/src/Modules/Auth/RequireAuth.php`; `php backend/tests/require_auth_check.php`; `php -S localhost:8001 -t backend/public` + curl guest-`me` 401 / `health` 200
+- Security/privacy considerations:
+- [ ] Safe 401 envelope only (`ApiError::unauthenticated()`); no usernames, SQL, or paths in denial responses; no secrets in code/logs
+- Notes/decisions:
+- [ ] Chosen 2026-10-16 via owner scoping (auth-only foundation vs full TASK-014 vs TASK-012): builds the mechanism now, policy later. Deactivation takes effect on next login (documented limitation); DB revalidation + matrix belong to TASK-014.
+## TASK-024: Request-review role rule (approve/reject admin-only, staff view-only)
+- Status: Done
+- Phase: Phase 3 — Staff authentication and permissions
+- Goal: Encode the owner-approved Request Review rule on both layers: server-side role gate for the future PATCH status endpoint + role-aware review UI. No policy invented — superadmin/admin approve, staff views.
+- Dependencies: TASK-023 (Done)
+- Scope: `RequireAuth::requireRoles()` + `APPOINTMENT_REVIEW_ROLES` const, 5 new CLI checks, role gating in `AppointmentDetail.jsx` (view-only note for staff, fail-closed) + role-aware queue description in `AppointmentsPage.jsx`, decision record in `docs/DECISIONS.md`.
+- Out of scope: The PATCH status endpoint itself (TASK-015); remaining Q-05 matrix for other modules (TASK-014, still Blocked); any schema change.
+- Expected files/modules:
+- `backend/src/Modules/Auth/RequireAuth.php`
+- `backend/tests/require_auth_check.php`
+- `frontend/src/features/staff/AppointmentDetail.jsx`
+- `frontend/src/pages/admin/AppointmentsPage.jsx`
+- Acceptance criteria:
+- [ ] Admin/superadmin sessions pass `requireRoles(APPOINTMENT_REVIEW_ROLES)`; staff gets 403 safe message; guests get 401 (not 403)
+- [ ] Review UI shows action buttons only for superadmin/admin; staff sees a view-only note; unknown roles fail closed
+- [ ] `php -l` clean; CLI test exits 0; `npm run build` + `npm run lint` exit 0
+- Verification commands/tests:
+- [ ] `php -l backend/src/Modules/Auth/RequireAuth.php`; `php backend/tests/require_auth_check.php`; `npm run build` + `npm run lint` from `frontend/`
+- Security/privacy considerations:
+- [ ] 403 reveals no role names or policy detail; UI gating is cosmetic until TASK-015 enforces server-side (stated in code comment, never claimed as enforcement)
+- Notes/decisions:
+- [ ] First approved Q-05 matrix item (DECISIONS.md 2026-10-16); TASK-015 PATCH must call `requireRoles(self::APPOINTMENT_REVIEW_ROLES)`.
+## TASK-025: Announcements live on DB (migration + seeder + public endpoint + UI wiring)
+- Status: Done
+- Phase: Phase 2 — Public appointment request vertical slice (board is part of the public portal)
+- Goal: Move the 4 board rows from `mockAnnouncements` into MySQL and serve them from `GET /api/public/announcements`, with the UI reading live. Same copy, no new content invented; publishing workflow (who creates/edits) stays blocked in TASK-021 — no admin columns or CRUD here.
+- Dependencies: TASK-007 (Done)
+- Scope: Migration `20261016000009_create_announcements.sql`, seeder `20261016000003_announcements.sql` (same 4 rows), `AnnouncementsController::list` + route + front-controller require, CLI test `backend/tests/announcements_check.php`, `getAnnouncements()` live in `api.js`, apply migration + seeder to dev `acmistamadangdb`.
+- Out of scope: Admin create/edit (TASK-021, still Blocked); `mockAppointments`/staff mocks (TASK-026/TASK-015); deleting `mockData.js` (TASK-027).
+- Expected files/modules:
+- `database/migrations/20261016000009_create_announcements.sql`
+- `database/seeders/20261016000003_announcements.sql`
+- `backend/src/Modules/Announcements/AnnouncementsController.php`
+- `backend/src/Routes/api.php`
+- `backend/public/index.php`
+- `backend/tests/announcements_check.php`
+- `frontend/src/services/api.js`
+- Acceptance criteria:
+- [ ] Table holds the same 4 rows (title/body/type/pinned/date); endpoint returns 200 pinned-first with UI-compatible keys; empty table → 200 `[]`
+- [ ] Board renders live rows with loading/error/empty states unchanged; `php -l` clean; CLI test exits 0; live disposable-DB 200 verified; dev DB seeded
+- Verification commands/tests:
+- [ ] `php -l` per file; `php backend/tests/announcements_check.php` (transient dev-DB env); live `php -S` 200 on disposable DB; `npm run build` + `npm run lint`
+- Security/privacy considerations:
+- [ ] Public read-only; reference text only, no patient/contact data; bounded (`LIMIT 50`); safe 503/500 envelopes; dev credentials never printed or committed
+- Notes/decisions:
+- [x] Verified 2026-10-16: `php -l` clean on 3 files; CLI 9/9 PASS on disposable DB (4 seeded rows pinned-first, UI keys, empty-table 200, leak scan, drop); live `GET /api/public/announcements` 200 on disposable DB (4 rows, pinned first, server log confirms); dev `acmistamadangdb` migrated + seeded 4 rows; `npm run build` exit 0, `npm run lint` exit 0 (1 pre-existing warning). Same board copy, nothing invented; admin CRUD stays in blocked TASK-021.
+- TASK-026: Public status lookup endpoint + UI wiring (reference + contact-suffix check, minimal response; mockAppointments removed after)
+## TASK-027: Delete dead mocks + stale demo references + docs refresh
+- Status: Done
+- Phase: Phase 4 — Appointment administration (cleanup after TASK-015/026)
+- Goal: Finish the owner-requested demo removal: delete `mockData.js` (zero importers), rename `demoUser` → `sessionUser`, fix stale demo comments/copy, and correct docs lines that still describe the mock era. No behavior change.
+- Dependencies: TASK-015 (Done), TASK-026 (Done)
+- Scope: Delete `frontend/src/services/mockData.js`; `demoUser` rename in session + 5 consumers; comment fixes (`api.js`, `StaffLoginPage.jsx`); `Footer.jsx` copy; `docs/ARCHITECTURE.md` + `docs/API.md` current-state lines.
+- Out of scope: Any endpoint, schema, or UI behavior change; rewriting dated history entries in TASKS/PROGRESS/DECISIONS (they stay as history).
+- Expected files/modules:
+- `frontend/src/services/mockData.js` (deleted)
+- `frontend/src/features/staff/session.jsx`
+- `frontend/src/features/staff/ProtectedRoute.jsx`
+- `frontend/src/features/staff/AppointmentDetail.jsx`
+- `frontend/src/layouts/StaffLayout.jsx`
+- `frontend/src/pages/admin/AppointmentsPage.jsx`
+- `frontend/src/pages/admin/StaffLoginPage.jsx`
+- `frontend/src/components/layout/Footer.jsx`
+- `frontend/src/services/api.js` (comment only)
+- `docs/ARCHITECTURE.md`
+- `docs/API.md`
+- Acceptance criteria:
+- [ ] No `mockData`, `demoUser`, `Demo data`, `TEMPORARY`, or demo-actor string remains under `frontend/src`; docs describe the live state
+- [ ] `npm run build` + `npm run lint` exit 0 with no new warnings
+- Verification commands/tests:
+- [ ] `grep` for demo/mock markers before + after; `npm run build` + `npm run lint` from `frontend/`
+- Security/privacy considerations:
+- [ ] Deletion only — no endpoint or auth touched; no secrets or patient data involved
+- Notes/decisions:
+- [x] Verified 2026-10-16: `mockData.js` deleted (zero importers); `demoUser` → `sessionUser` in session + 5 consumers; stale comments/copy fixed; post-change grep confirms zero demo/mock markers under `frontend/src` (one accurate history note in `api.js`); `npm run build` exit 0, `npm run lint` exit 0 (1 pre-existing warning). Dated history entries in TASKS/PROGRESS/DECISIONS intentionally kept.
+## TASK-014: Staff authorization policies (default RBAC enforcement)
+- Status: Done
+- Phase: Phase 3 — Staff authentication and permissions
+- Goal: Enforce the approved default RBAC matrix (Q-05) from one central policy so every current and future staff endpoint gates identically: `AccessPolicy` module map + `requireModule()` helper; PATCH status reuses it. Granular per-user overrides are explicitly future work, not this task.
+- Dependencies: TASK-013 (Done), TASK-023 (Done)
+- Scope: `backend/src/Modules/Auth/AccessPolicy.php` (DEFAULT_MATRIX + `rolesFor()` + `requireModule()`), CLI test `backend/tests/access_policy_check.php`, PATCH controller switched to the matrix, `docs/API.md` authorization section.
+- Out of scope: Granular per-user permissions (future task — noted in DECISIONS.md); new endpoints; schema changes; frontend changes.
+- Expected files/modules:
+- `backend/src/Modules/Auth/AccessPolicy.php`
+- `backend/tests/access_policy_check.php`
+- `backend/src/Modules/Appointments/AppointmentAdminController.php` (PATCH gate source only)
+- `docs/API.md`
+- Acceptance criteria:
+- [ ] Every matrix cell asserted (8 modules × 3 roles); guests → 401, wrong role → 403 safe message on `requireModule()`
+- [ ] `APPOINTMENT_REVIEW_ROLES` proven in sync with the matrix by test; PATCH behavior unchanged (admin suite re-passes)
+- [ ] `php -l` clean; new CLI test + `require_auth_check` + `appointments_admin_check` all exit 0
+- Verification commands/tests:
+- [ ] `php -l` per file; `php backend/tests/access_policy_check.php`; rerun `require_auth_check` + `appointments_admin_check` (transient dev-DB env)
+- Security/privacy considerations:
+- [ ] 403 reveals no role names or policy detail; matrix lives in code (not client-reachable); no secrets in tests
+- Notes/decisions:
+- [x] Verified 2026-10-16: `php -l` clean; new CLI 48/48 PASS (every matrix cell + gate envelopes + const-sync check); `require_auth_check` 11/11 + `appointments_admin_check` 28/28 re-pass (PATCH refactor behavior-preserving). Debugging: CLI died silently (exit 255) after 3 checks — `AccessPolicy.php` was missing from both the test's requires and the front-controller require list (same manual-require trap as TASK-015); fixed both. No route/schema/frontend change.
+## TASK-015: Appointment administration (staff list/detail/status + UI wiring)
+- Status: Done
+- Phase: Phase 4 — Appointment administration
+- Goal: Replace the staff mock screens with live endpoints and wiring: staff-only `GET /api/appointments` (filters/pagination/counts), `GET /api/appointments/{reference}` (full record + history), `PATCH /api/appointments/{reference}/status` (transitions + reason + actor history, superadmin/admin only). Staff UI fetches live; `mockStaffData.js` deleted.
+- Dependencies: TASK-012 (Done), TASK-014 (partial: review-role rule approved), TASK-023 (Done)
+- Scope: Migration `20261016000010_create_appointment_status_history.sql`; `AppointmentAdminService` + `AppointmentAdminController`; prefix-route dispatch + PATCH in CORS; CLI test `backend/tests/appointments_admin_check.php`; `api.js` staff functions; session/list/detail/dashboard/sidebar live wiring; new `reviewMeta.js` UI constants; delete `mockStaffData.js`; apply migration to dev DB.
+- Out of scope: Reschedule (date/time change — no approved rule); permission matrix for other modules (TASK-014); publishing workflow (TASK-021); deleting `mockData.js` (TASK-026/027).
+- Expected files/modules:
+- `database/migrations/20261016000010_create_appointment_status_history.sql`
+- `backend/src/Modules/Appointments/AppointmentAdminService.php`
+- `backend/src/Modules/Appointments/AppointmentAdminController.php`
+- `backend/src/Routes/api.php`
+- `backend/public/index.php` (prefix dispatch + PATCH in CORS)
+- `backend/tests/appointments_admin_check.php`
+- `frontend/src/services/api.js`
+- `frontend/src/features/staff/session.jsx`
+- `frontend/src/features/staff/reviewMeta.js` (new)
+- `frontend/src/features/staff/mockStaffData.js` (deleted)
+- `frontend/src/features/staff/AppointmentList.jsx`
+- `frontend/src/features/staff/AppointmentDetail.jsx`
+- `frontend/src/pages/admin/` (badges/labels)
+- Acceptance criteria:
+- [ ] Guests get 401 on all three endpoints; staff role gets 200 on list/detail and 403 on PATCH; admin/superadmin full access
+- [ ] Transitions enforced server-side (`pending→approved/rejected`, `approved→completed/no_show/cancelled`); reason required for rejected/cancelled; actor + timestamp recorded per change; concurrent re-transition rejected
+- [ ] List supports status/service/date/q/page filters with bounded pages + counts; detail exposes contact/address/history staff-only
+- [ ] Staff UI fully live (no mock imports, no demo badges); `php -l` clean; CLI test exits 0; live cookiejar flow verified; disposable DBs dropped
+- Verification commands/tests:
+- [ ] `php -l` per file; `php backend/tests/appointments_admin_check.php` (transient dev-DB env); live `php -S` + curl cookiejar (login → list → detail → approve → re-approve 422 → logout); `npm run build` + `npm run lint`
+- Security/privacy considerations:
+- [ ] `RequireAuth` on every endpoint + `APPOINTMENT_REVIEW_ROLES` on PATCH; list rows exclude contact/address; safe 401/403/404/422 envelopes; prepared statements only; dev credentials transient only
+- Notes/decisions:
+- [ ] History records staff actions only (no backfill of pre-existing rows; empty history renders honestly in UI). No reschedule — unapproved.
+- [x] Verified 2026-10-16: `php -l` clean; CLI 28/28 PASS on disposable DB (dropped); live cookiejar flow on disposable DB (dropped) — login 200 → list 200 → detail 200 (contact + empty history) → PATCH approve 200 (actor + timestamp recorded) → repeat 422 → logout → list 401 (server log confirms all codes); `npm run build` + `npm run lint` exit 0. Debugging: (1) live list/detail first 500'd — new classes must be added to the manual require list in `backend/public/index.php` (no composer autoload in this repo); fixed with 2 require lines. (2) CLI caught a real HY093 — `:q` reused twice under native prepares; fixed with `:q_ref`/`:q_name` (same lesson as TASK-010, now in TESTING.md).
+## TASK-026: Public status lookup endpoint + UI wiring
+- Status: Done
+- Phase: Phase 2 — Public appointment request vertical slice
+- Goal: Replace the `lookupAppointment` mock with live `POST /api/public/appointments/lookup`: reference + contact-suffix check returning status + schedule only. POST (not GET) so the reference and suffix stay out of URLs and access logs.
+- Dependencies: TASK-010 (Done)
+- Scope: `LookupController` + route + front-controller require, CLI test `backend/tests/lookup_check.php`, `lookupAppointment()` live in `api.js`, remove the mock hint in `StatusLookupForm.jsx`. No schema change.
+- Out of scope: Deleting `mockData.js` (TASK-027, after this lands); brute-force throttling (noted limitation — reference has ~2B combinations); staff endpoints.
+- Expected files/modules:
+- `backend/src/Modules/Appointments/LookupController.php`
+- `backend/src/Routes/api.php`
+- `backend/public/index.php`
+- `backend/tests/lookup_check.php`
+- `frontend/src/services/api.js`
+- `frontend/src/features/appointments/StatusLookupForm.jsx`
+- Acceptance criteria:
+- [ ] Valid reference + correct suffix → 200 with exactly `{ reference_no, service_name, schedule_date, start_time, status }` (no name/contact/address)
+- [ ] Wrong suffix, unknown or malformed reference → identical 404 (no disclosure of which part failed); missing fields → 422; suffix comparison timing-safe
+- [ ] Form works live with loading/error/success states; `php -l` clean; CLI test exits 0; live disposable-DB 200 + 404 verified; disposable DB dropped
+- Verification commands/tests:
+- [ ] `php -l` per file; `php backend/tests/lookup_check.php` (transient dev-DB env); live `php -S` + curl POST checks for 200/404 bodies; `npm run build` + `npm run lint`
+- Security/privacy considerations:
+- [ ] POST body only (nothing sensitive in URLs/titles/logs); minimal response; identical 404s (no enumeration); prepared statements; safe envelopes; transient credentials only
+- Notes/decisions:
+- [x] Verified 2026-10-16: `php -l` clean; CLI 11/11 PASS on disposable DB (dropped); live POST on disposable DB (dropped) — valid 200 (5 minimal keys), wrong suffix 404 (server log confirms 200/200/404); `npm run build` + `npm run lint` exit 0. No schema change; dev DB untouched (lookup reads existing rows).
 
 ---
 ## Related notes

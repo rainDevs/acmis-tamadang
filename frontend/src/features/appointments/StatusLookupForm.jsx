@@ -33,7 +33,6 @@ export default function StatusLookupForm({ compact = false }) {
           <h2 className="text-base font-bold">Check your request status</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             No account needed. Enter your reference number and the last 4 digits of your contact number.
-            Try mock <code className="rounded bg-muted px-1 font-mono text-xs">ACMIS-2026-000123</code> + <code className="rounded bg-muted px-1 font-mono text-xs">4567</code>.
           </p>
         </>
       ) : null}
